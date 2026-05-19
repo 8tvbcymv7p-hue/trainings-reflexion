@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<script type="application/json" id="cowork-artifact-meta">
+{
+  "name": "Trainings Reflexion U18 U20",
+  "schemaVersion": 1,
+  "description": "Automatisierte Trainings-Reflexion für Jugendspieler. Drei Modi: (1) Spieler-Reflexion mit 3 gewürfelten Fragen aus den Bereichen Fortschritt, Mentalität, Transfer und Andere — abgedeckte Themen u.a. Deliberate Practice, Komfortzone, Fokus, Frustrationstoleranz, Coachability. (2) Trainer-Dashboard mit Wochen-Auswertung (Team & Einzelspieler), Verlaufsgrafik, Radar, Heatmap, Top-Momente. (3) Verwaltung von Gruppen/Spielern, Export/Import, Demo-Daten. Daten in localStorage. Start-Setup: U18/U20."
+}
+</script>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trainings-Reflexion · U18/U20</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  background: #f7f8fa;
+  color: #1a1d23;
+  line-height: 1.5;
+}
+.container { max-width: 980px; margin: 0 auto; padding: 16px; }
+header.app-header {
+  background: linear-gradient(135deg, #0f3460 0%, #16498a 100%);
+  color: #fff;
+  padding: 20px 16px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+header.app-header h1 { margin: 0 0 4px 0; font-size: 22px; font-weight: 700; }
+header.app-header p { margin: 0; opacity: 0.85; font-size: 14px; }
+.tabs {
+  display: flex;
+  gap: 6px;
+  background: #fff;
+  padding: 6px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  overflow-x: auto;
+}
+.tab-btn {
+  flex: 1;
+  min-width: 110px;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  color: #5b6471;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.tab-btn:hover { background: #eef1f5; color: #1a1d23; }
+.tab-btn.active { background: #0f3460; color: #fff; }
+.view { display: none; }
+.view.active { display: block; }
+.card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.card h2 { margin: 0 0 12px 0; font-size: 17px; font-weight: 700; color: #0f3460; }
+.card h3 { margin: 20px 0 8px 0; font-size: 14px; font-weight: 700; color: #5b6471; text-transform: uppercase; letter-spacing: 0.5px; }
+label { display: block; font-size: 14px; font-weight: 600; color: #2c3340; margin-bottom: 6px; }
+select, input[type=text], textarea {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  border: 1px solid #d9dde2;
+  border-radius: 8px;
+  background: #fff;
+  color: #1a1d23;
+  font-family: inherit;
+  margin-bottom: 12px;
+}
+textarea { resize: vertical; min-height: 70px; }
+select:focus, input:focus, textarea:focus { outline: none; border-color: #0f3460; box-shadow: 0 0 0 3px rgba(15,52,96,0.1); }
+.btn {
+  display: inline-block;
+  padding: 11px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+.btn-primary { background: #0f3460; color: #fff; }
+.btn-primary:hover { background: #0a2845; }
+.btn-secondary { background: #eef1f5; color: #2c3340; }
+.btn-secondary:hover { background: #dfe4ea; }
+.btn-danger { background: #fef2f2; color: #b91c1c; }
+.btn-danger:hover { background: #fee2e2; }
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.question-block {
+  border-left: 3px solid #0f3460;
+  padding: 14px 16px;
+  background: #f7f9fc;
+  border-radius: 0 8px 8px 0;
+  margin-bottom: 14px;
+}
+.question-meta {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.badge {
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: #e0e7ef;
+  color: #0f3460;
+}
+.badge.area-fortschritt { background: #dbeafe; color: #1e40af; }
+.badge.area-mentalitaet { background: #fef3c7; color: #92400e; }
+.badge.area-transfer { background: #d1fae5; color: #065f46; }
+.badge.area-andere { background: #e9d5ff; color: #6b21a8; }
+.question-text { font-size: 15px; font-weight: 500; margin-bottom: 10px; color: #1a1d23; }
+.scale {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+.scale-option {
+  flex: 1;
+  padding: 10px 4px;
+  text-align: center;
+  border: 2px solid #d9dde2;
+  border-radius: 8px;
+  cursor: pointer;
+  background: #fff;
+  font-weight: 600;
+  font-size: 15px;
+  transition: all 0.1s;
+  user-select: none;
+}
+.scale-option:hover { border-color: #0f3460; }
+.scale-option.selected { background: #0f3460; color: #fff; border-color: #0f3460; }
+.scale-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #5b6471;
+  margin-top: -6px;
+  margin-bottom: 8px;
+  padding: 0 4px;
+}
+.player-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.player-chip {
+  padding: 6px 12px;
+  background: #eef1f5;
+  border-radius: 16px;
+  font-size: 13px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.player-chip .remove { cursor: pointer; color: #b91c1c; font-weight: 700; }
+.row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 600px) { .row-2 { grid-template-columns: 1fr; } }
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.stat-card {
+  background: #f7f9fc;
+  padding: 14px;
+  border-radius: 8px;
+  border-left: 3px solid #0f3460;
+}
+.stat-card .stat-label { font-size: 11px; text-transform: uppercase; color: #5b6471; font-weight: 600; letter-spacing: 0.5px; }
+.stat-card .stat-value { font-size: 24px; font-weight: 700; color: #0f3460; margin-top: 2px; }
+.stat-card .stat-sub { font-size: 12px; color: #5b6471; }
+canvas { max-width: 100%; }
+.chart-wrap { position: relative; height: 280px; margin-bottom: 16px; }
+.chart-wrap-tall { height: 360px; }
+.notice {
+  padding: 12px 14px;
+  background: #fef9c3;
+  border-left: 3px solid #ca8a04;
+  border-radius: 0 8px 8px 0;
+  font-size: 13px;
+  color: #713f12;
+  margin-bottom: 12px;
+}
+.notice.info { background: #dbeafe; border-left-color: #2563eb; color: #1e3a8a; }
+.notice.success { background: #d1fae5; border-left-color: #059669; color: #064e3b; }
+.text-answer-list { display: flex; flex-direction: column; gap: 8px; }
+.text-answer {
+  background: #f7f9fc;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  border-left: 3px solid #0f3460;
+}
+.text-answer .meta { font-size: 11px; color: #5b6471; margin-bottom: 4px; font-weight: 600; }
+.empty-state { text-align: center; padding: 30px 20px; color: #5b6471; font-size: 14px; }
+.empty-state .emoji { font-size: 40px; display: block; margin-bottom: 10px; }
+.pin-overlay {
+  position: fixed; inset: 0;
+  background: rgba(15,52,96,0.92);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.pin-box { background: #fff; padding: 30px; border-radius: 12px; max-width: 320px; width: 100%; text-align: center; }
+.pin-box h2 { margin-top: 0; color: #0f3460; }
+.pin-input { font-size: 20px; text-align: center; letter-spacing: 4px; }
+.last-saved { font-size: 12px; color: #5b6471; margin-top: 8px; }
+small.help { display: block; font-size: 12px; color: #5b6471; margin-top: -8px; margin-bottom: 12px; }
+.area-summary-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #eef1f5; font-size: 14px; }
+.area-bar { flex: 1; height: 8px; background: #eef1f5; border-radius: 4px; overflow: hidden; }
+.area-bar-fill { height: 100%; background: #0f3460; border-radius: 4px; transition: width 0.3s; }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <header class="app-header">
+    <h1>🏆 Trainings-Reflexion</h1>
+    <p>Reflexion · Mentalität · Fortschritt · Transfer</p>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="reflect">📝 Reflexion</button>
+    <button class="tab-btn" data-tab="dashboard">📊 Dashboard</button>
+    <button class="tab-btn" data-tab="admin">⚙️ Verwaltung</button>
+  </div>
+
+  <!-- ============================ REFLEXION-VIEW ============================ -->
+  <div class="view active" id="view-reflect">
+    <div class="card">
+      <h2>Reflexion nach dem Training</h2>
+      <p style="margin-top:0;color:#5b6471;font-size:14px;">Wähle deinen Namen und beantworte ehrlich 3 Fragen. Dauert ca. 2 Minuten.</p>
+
+      <div class="row-2">
+        <div>
+          <label for="reflect-group">Gruppe</label>
+          <select id="reflect-group"></select>
+        </div>
+        <div>
+          <label for="reflect-player">Spieler</label>
+          <select id="reflect-player"></select>
+        </div>
+      </div>
+
+      <div class="row-2">
+        <div>
+          <label for="reflect-date">Datum</label>
+          <input type="date" id="reflect-date">
+        </div>
+        <div>
+          <label for="reflect-session">Einheit</label>
+          <select id="reflect-session">
+            <option value="haupttraining">Haupttraining</option>
+            <option value="techniktraining">Techniktraining</option>
+            <option value="krafttraining">Kraft/Athletik</option>
+            <option value="spiel">Spiel/Test</option>
+            <option value="individual">Individualtraining</option>
+            <option value="sonstiges">Sonstiges</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div id="questions-host"></div>
+
+    <div class="card">
+      <h3>Zwei letzte Fragen — jedes Mal</h3>
+      <label for="top-moment">⭐ Mein Top-Moment heute</label>
+      <textarea id="top-moment" placeholder="Was war heute mein bester Moment? (1 Satz reicht)"></textarea>
+      <label for="next-training">➡️ Was nehme ich ins nächste Training mit?</label>
+      <textarea id="next-training" placeholder="Konkret: woran will ich beim nächsten Mal arbeiten?"></textarea>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" id="save-reflection">Reflexion speichern</button>
+        <button class="btn btn-secondary" id="shuffle-questions">🎲 Andere Fragen würfeln</button>
+      </div>
+      <div class="last-saved" id="save-status"></div>
+    </div>
+  </div>
+
+  <!-- ============================ DASHBOARD-VIEW ============================ -->
+  <div class="view" id="view-dashboard">
+    <div class="card">
+      <h2>Wochen-Auswertung</h2>
+      <div class="row-2">
+        <div>
+          <label for="dash-group">Gruppe</label>
+          <select id="dash-group"></select>
+        </div>
+        <div>
+          <label for="dash-week">Woche</label>
+          <select id="dash-week"></select>
+        </div>
+      </div>
+    </div>
+
+    <div id="dash-empty" class="card empty-state" style="display:none;">
+      <span class="emoji">📭</span>
+      <strong>Noch keine Reflexionen für diese Woche</strong>
+      <p>Sobald Spieler Reflexionen einreichen, erscheint hier die Auswertung.</p>
+    </div>
+
+    <div id="dash-content" style="display:none;">
+
+      <!-- TEAM-SICHT -->
+      <div class="card">
+        <h2>👥 Team-Sicht</h2>
+        <div class="stat-grid" id="team-stats"></div>
+
+        <h3>Durchschnitt pro Bereich</h3>
+        <div id="team-areas"></div>
+
+        <h3>Reflexionen pro Spieler (diese Woche)</h3>
+        <div class="chart-wrap"><canvas id="chart-team-participation"></canvas></div>
+
+        <h3>Themen-Heatmap (Bereiche × Spieler)</h3>
+        <div class="chart-wrap chart-wrap-tall"><canvas id="chart-team-heatmap"></canvas></div>
+      </div>
+
+      <!-- EINZELSPIELER-SICHT -->
+      <div class="card">
+        <h2>👤 Einzelspieler-Sicht</h2>
+        <label for="dash-player">Spieler auswählen</label>
+        <select id="dash-player"></select>
+
+        <div id="player-content" style="margin-top:12px;">
+          <div class="stat-grid" id="player-stats"></div>
+
+          <h3>Verlauf der Bewertungen (über die Woche)</h3>
+          <div class="chart-wrap"><canvas id="chart-player-trend"></canvas></div>
+
+          <h3>Stärken-/Aufmerksamkeitsprofil pro Bereich</h3>
+          <div class="chart-wrap"><canvas id="chart-player-radar"></canvas></div>
+
+          <h3>⭐ Top-Momente der Woche</h3>
+          <div class="text-answer-list" id="player-top-moments"></div>
+
+          <h3>➡️ Vorsätze fürs nächste Training</h3>
+          <div class="text-answer-list" id="player-next-trainings"></div>
+
+          <h3>💬 Eigene Textantworten</h3>
+          <div class="text-answer-list" id="player-text-answers"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================ ADMIN-VIEW ============================ -->
+  <div class="view" id="view-admin">
+    <div class="card">
+      <h2>Gruppen & Spieler verwalten</h2>
+
+      <h3>Aktive Gruppe</h3>
+      <select id="admin-group-select"></select>
+
+      <div class="btn-row">
+        <button class="btn btn-secondary" id="add-group">+ Neue Gruppe</button>
+        <button class="btn btn-danger" id="delete-group">Gruppe löschen</button>
+      </div>
+
+      <h3>Spieler in dieser Gruppe</h3>
+      <div class="player-list" id="admin-players"></div>
+      <div class="row-2">
+        <input type="text" id="new-player-name" placeholder="Name eintippen, mit Enter hinzufügen">
+        <button class="btn btn-primary" id="add-player">+ Spieler hinzufügen</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Daten exportieren / importieren</h2>
+      <p style="font-size:13px;color:#5b6471;">Die Daten werden im Browser gespeichert (geräte-lokal). Mit Export/Import kannst du sie sichern oder zwischen Geräten austauschen.</p>
+      <div class="btn-row">
+        <button class="btn btn-secondary" id="export-data">⬇️ Alle Daten exportieren (JSON)</button>
+        <button class="btn btn-secondary" id="import-data">⬆️ Daten importieren (JSON)</button>
+        <button class="btn btn-secondary" id="load-demo">🎯 Demo-Daten laden</button>
+        <button class="btn btn-danger" id="reset-data">🗑 Alles zurücksetzen</button>
+      </div>
+      <input type="file" id="import-file" accept=".json" style="display:none;">
+    </div>
+
+    <div class="card">
+      <h2>Hinweise zum Einsatz</h2>
+      <ol style="margin:0;padding-left:20px;font-size:14px;line-height:1.7;">
+        <li>Diese App kann auf <strong>einem Tablet</strong> nach dem Training rumgehen — jeder Spieler wählt seinen Namen.</li>
+        <li>Alternativ: jeder Spieler ruft die Seite auf seinem Handy auf und nutzt sie individuell.</li>
+        <li>Daten liegen <strong>lokal im Browser</strong> — also auf dem Gerät, auf dem reflektiert wird. Für eine Mehr-Geräte-Lösung exportiere die JSON-Daten regelmäßig und konsolidiere sie auf einem Trainer-Gerät.</li>
+        <li>Sobald wir wissen, dass dir das Konzept gefällt, können wir das auf eine echte Web-App mit Datenbank, Mehrbenutzer-Login und Push-Benachrichtigung umstellen (oder auf Google Forms anbinden).</li>
+      </ol>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* =====================================================================
+   FRAGENKATALOG
+   Bereiche: fortschritt | mentalitaet | transfer | andere
+===================================================================== */
+const QUESTIONS = [
+  // ---- FORTSCHRITT ----
+  { area:"fortschritt", topic:"Lernfortschritt", text:"Wie viel habe ich heute im Training dazugelernt?", scaleLow:"wenig", scaleHigh:"viel", openText:"Was konkret?" },
+  { area:"fortschritt", topic:"Stärken zeigen", text:"Wie deutlich konnte ich heute meine Stärken zeigen?", scaleLow:"kaum", scaleHigh:"voll", openText:"Welche Stärke?" },
+  { area:"fortschritt", topic:"Schwächen-Arbeit", text:"Wie konsequent habe ich an einer Schwäche gearbeitet?", scaleLow:"gar nicht", scaleHigh:"sehr fokussiert", openText:"An welcher Schwäche?" },
+  { area:"fortschritt", topic:"Selbstwirksamkeit", text:"Wie stark hatte ich heute das Gefühl, mein Training selbst zu steuern?", scaleLow:"fremdbestimmt", scaleHigh:"selbstbestimmt", openText:"" },
+  { area:"fortschritt", topic:"Wochen-Entwicklung", text:"Wie zufrieden bin ich mit meiner Entwicklung diese Woche?", scaleLow:"unzufrieden", scaleHigh:"sehr zufrieden", openText:"Woran merke ich das?" },
+
+  // ---- MENTALITÄT & LERNBEREITSCHAFT ----
+  { area:"mentalitaet", topic:"Deliberate Practice", text:"Habe ich heute bewusst und konzentriert an einer Sache gearbeitet — oder eher 'mitgemacht'?", scaleLow:"mitgemacht", scaleHigh:"bewusst geübt", openText:"Was war mein bewusster Übungs-Schwerpunkt?" },
+  { area:"mentalitaet", topic:"Komfortzone", text:"Habe ich heute etwas ausprobiert, das mir schwergefallen ist?", scaleLow:"alles easy", scaleHigh:"weit draußen", openText:"Wann war ich heute aus meiner Komfortzone draußen?" },
+  { area:"mentalitaet", topic:"Fokus", text:"Wie hoch war meine Konzentration heute?", scaleLow:"abgelenkt", scaleHigh:"voll da", openText:"Was hat mich abgelenkt — oder fokussiert?" },
+  { area:"mentalitaet", topic:"Frustrationstoleranz", text:"Wie bin ich mit Fehlern oder Misserfolgen umgegangen?", scaleLow:"hängen geblieben", scaleHigh:"schnell weiter", openText:"" },
+  { area:"mentalitaet", topic:"Growth Mindset", text:"Habe ich heute eine echte Herausforderung gesucht, statt sie zu vermeiden?", scaleLow:"vermieden", scaleHigh:"angenommen", openText:"Welche Herausforderung?" },
+  { area:"mentalitaet", topic:"Feedback annehmen", text:"Wie offen war ich für Korrekturen und Feedback — auch wenn unangenehm?", scaleLow:"abgewehrt", scaleHigh:"voll angenommen", openText:"Welches Feedback war wichtig?" },
+  { area:"mentalitaet", topic:"Anstrengungsbereitschaft", text:"Wie viel Einsatz habe ich heute gegeben — von 1 bis 5?", scaleLow:"halbe Kraft", scaleHigh:"alles gegeben", openText:"" },
+
+  // ---- TRANSFER & KONTINUITÄT ----
+  { area:"transfer", topic:"Spielnähe", text:"Wie spielnah habe ich heute trainiert (Tempo, Druck, Entscheidungen)?", scaleLow:"weit weg vom Spiel", scaleHigh:"wie im Spiel", openText:"" },
+  { area:"transfer", topic:"Übertrag aufs Spiel", text:"Wie gut kann ich das heute Trainierte am Wochenende anwenden?", scaleLow:"kaum", scaleHigh:"direkt", openText:"Wo konkret im Spiel?" },
+  { area:"transfer", topic:"Verbindung zum letzten Training", text:"Konnte ich das vom letzten Training mitnehmen und weiterführen?", scaleLow:"nichts mehr da", scaleHigh:"voll dran geblieben", openText:"Was konkret konnte ich weiterführen?" },
+  { area:"transfer", topic:"Routinen", text:"Habe ich meine Vorbereitungs-Routine (Schlaf, Essen, Aufwärmen, Visualisierung) eingehalten?", scaleLow:"gar nicht", scaleHigh:"komplett", openText:"" },
+  { area:"transfer", topic:"Eigeninitiative", text:"Habe ich über das Pflichtprogramm hinaus etwas getan (extra Übungen, Hilfe für Mitspieler, Videoanalyse)?", scaleLow:"nichts extra", scaleHigh:"viel extra", openText:"Was genau?" },
+  { area:"transfer", topic:"Vorsatz nächstes Training", text:"Habe ich für mich einen konkreten Vorsatz fürs nächste Training?", scaleLow:"keiner", scaleHigh:"glasklar", openText:"Welcher?" },
+
+  // ---- ANDERE ----
+  { area:"andere", topic:"Teamspirit", text:"Wie sehr habe ich heute mein Team unterstützt?", scaleLow:"kaum", scaleHigh:"voll dabei", openText:"Wie konkret?" },
+  { area:"andere", topic:"Selbstvertrauen", text:"Wie selbstbewusst bin ich heute auf dem Platz aufgetreten?", scaleLow:"unsicher", scaleHigh:"voll präsent", openText:"" },
+  { area:"andere", topic:"Energie / Körper", text:"Wie war meine körperliche Energie heute?", scaleLow:"müde", scaleHigh:"topfit", openText:"" },
+  { area:"andere", topic:"Körper-Signale", text:"Habe ich auf meinen Körper gehört (Schmerz, Verspannung, Belastung)?", scaleLow:"ignoriert", scaleHigh:"voll gehört", openText:"Gibt es etwas zu beachten?" },
+  { area:"andere", topic:"Freude / Motivation", text:"Wie viel Freude hatte ich heute am Training?", scaleLow:"wenig", scaleHigh:"voll Bock", openText:"" },
+  { area:"andere", topic:"Coachability", text:"Wie aktiv habe ich mit den Trainern kommuniziert (Fragen gestellt, Feedback eingefordert)?", scaleLow:"still", scaleHigh:"viel Dialog", openText:"" }
+];
+
+const AREA_META = {
+  fortschritt: { label: "Fortschritt", color: "#2563eb" },
+  mentalitaet: { label: "Mentalität & Lernbereitschaft", color: "#d97706" },
+  transfer:    { label: "Transfer & Kontinuität", color: "#059669" },
+  andere:      { label: "Andere (Team/Körper/Motivation)", color: "#7c3aed" }
+};
+
+/* =====================================================================
+   DATA LAYER (localStorage)
+===================================================================== */
+const STORAGE_KEY = "reflexion-tool-v1";
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  // Default skeleton with U18/U20 demo group
+  return {
+    groups: {
+      "U20": ["Spieler 1", "Spieler 2", "Spieler 3", "Spieler 4", "Spieler 5", "Spieler 6", "Spieler 7", "Spieler 8", "Spieler 9", "Spieler 10", "Spieler 11", "Spieler 12"],
+      "U18": ["Spieler 1", "Spieler 2", "Spieler 3", "Spieler 4", "Spieler 5", "Spieler 6", "Spieler 7", "Spieler 8", "Spieler 9", "Spieler 10", "Spieler 11", "Spieler 12"]
+    },
+    reflections: [] // {id, group, player, date, session, answers:[{area,topic,text,scale,scaleText}], topMoment, nextTraining, savedAt}
+  };
+}
+function saveData(d) { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }
+let DATA = loadData();
+
+/* =====================================================================
+   HELPERS
+===================================================================== */
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+function isoWeek(dateStr){
+  const d = new Date(dateStr + "T00:00:00");
+  const target = new Date(d.valueOf());
+  const dayNr = (d.getDay() + 6) % 7;
+  target.setDate(target.getDate() - dayNr + 3);
+  const firstThursday = target.valueOf();
+  target.setMonth(0, 1);
+  if (target.getDay() !== 4) target.setMonth(0, 1 + ((4 - target.getDay()) + 7) % 7);
+  const week = 1 + Math.ceil((firstThursday - target) / 604800000);
+  return `${d.getFullYear()}-W${String(week).padStart(2,"0")}`;
+}
+function isoWeekRange(weekKey){
+  const [year, w] = weekKey.split("-W").map(Number);
+  const simple = new Date(year, 0, 1 + (w - 1) * 7);
+  const dow = simple.getDay();
+  const monday = new Date(simple);
+  if (dow <= 4) monday.setDate(simple.getDate() - simple.getDay() + 1);
+  else monday.setDate(simple.getDate() + 8 - simple.getDay());
+  const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
+  return { monday: monday.toISOString().slice(0,10), sunday: sunday.toISOString().slice(0,10) };
+}
+function fmtDate(d){
+  const x = new Date(d + "T00:00:00");
+  return x.toLocaleDateString("de-DE", { weekday:"short", day:"2-digit", month:"2-digit" });
+}
+function uid(){ return Math.random().toString(36).slice(2) + Date.now().toString(36); }
+
+function pickQuestions(){
+  // pick 3 questions: from 3 different areas
+  const areas = Object.keys(AREA_META);
+  const pickedAreas = areas.slice().sort(()=>Math.random()-0.5).slice(0,3);
+  return pickedAreas.map(a => {
+    const pool = QUESTIONS.filter(q => q.area === a);
+    return pool[Math.floor(Math.random()*pool.length)];
+  });
+}
+
+/* =====================================================================
+   TABS
+===================================================================== */
+document.querySelectorAll(".tab-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("view-" + btn.dataset.tab).classList.add("active");
+    if (btn.dataset.tab === "dashboard") renderDashboard();
+    if (btn.dataset.tab === "admin") renderAdmin();
+  });
+});
+
+/* =====================================================================
+   REFLEXION VIEW
+===================================================================== */
+let currentQuestions = [];
+
+function renderReflect(){
+  const groupSel = document.getElementById("reflect-group");
+  const playerSel = document.getElementById("reflect-player");
+  groupSel.innerHTML = Object.keys(DATA.groups).map(g => `<option>${g}</option>`).join("");
+  const onGroupChange = () => {
+    const g = groupSel.value;
+    const players = DATA.groups[g] || [];
+    playerSel.innerHTML = players.map(p => `<option>${p}</option>`).join("");
+  };
+  groupSel.addEventListener("change", onGroupChange);
+  onGroupChange();
+  document.getElementById("reflect-date").value = todayISO();
+  shuffleQuestions();
+}
+
+function shuffleQuestions(){
+  currentQuestions = pickQuestions();
+  const host = document.getElementById("questions-host");
+  host.innerHTML = currentQuestions.map((q, idx) => {
+    const meta = AREA_META[q.area];
+    return `
+      <div class="card">
+        <div class="question-meta">
+          <span class="badge area-${q.area}">${meta.label}</span>
+          <span class="badge">${q.topic}</span>
+        </div>
+        <div class="question-text">${q.text}</div>
+        <div class="scale" data-question="${idx}">
+          ${[1,2,3,4,5].map(n => `<div class="scale-option" data-val="${n}">${n}</div>`).join("")}
+        </div>
+        <div class="scale-labels"><span>${q.scaleLow}</span><span>${q.scaleHigh}</span></div>
+        ${q.openText ? `<label>${q.openText}</label><textarea data-textfor="${idx}" placeholder="Optional, aber wertvoll für die Auswertung"></textarea>` : ""}
+      </div>
+    `;
+  }).join("");
+  // attach scale handlers
+  host.querySelectorAll(".scale").forEach(scaleEl => {
+    scaleEl.querySelectorAll(".scale-option").forEach(opt => {
+      opt.addEventListener("click", () => {
+        scaleEl.querySelectorAll(".scale-option").forEach(o => o.classList.remove("selected"));
+        opt.classList.add("selected");
+      });
+    });
+  });
+}
+
+document.getElementById("shuffle-questions").addEventListener("click", shuffleQuestions);
+
+document.getElementById("save-reflection").addEventListener("click", () => {
+  const group = document.getElementById("reflect-group").value;
+  const player = document.getElementById("reflect-player").value;
+  const date = document.getElementById("reflect-date").value;
+  const session = document.getElementById("reflect-session").value;
+
+  const answers = currentQuestions.map((q, idx) => {
+    const selected = document.querySelector(`.scale[data-question="${idx}"] .scale-option.selected`);
+    const scale = selected ? Number(selected.dataset.val) : null;
+    const textEl = document.querySelector(`textarea[data-textfor="${idx}"]`);
+    const scaleText = textEl ? textEl.value.trim() : "";
+    return { area: q.area, topic: q.topic, text: q.text, scale, scaleText };
+  });
+
+  const missing = answers.filter(a => a.scale === null).length;
+  const status = document.getElementById("save-status");
+  if (missing > 0) {
+    status.textContent = `⚠️ Bitte bei allen ${currentQuestions.length} Fragen eine Bewertung von 1–5 angeben (${missing} fehlen).`;
+    status.style.color = "#b91c1c";
+    return;
+  }
+  if (!player) {
+    status.textContent = "⚠️ Bitte zuerst einen Spieler auswählen.";
+    status.style.color = "#b91c1c";
+    return;
+  }
+
+  const reflection = {
+    id: uid(),
+    group, player, date, session,
+    answers,
+    topMoment: document.getElementById("top-moment").value.trim(),
+    nextTraining: document.getElementById("next-training").value.trim(),
+    savedAt: new Date().toISOString()
+  };
+  DATA.reflections.push(reflection);
+  saveData(DATA);
+  status.textContent = `✅ Gespeichert für ${player} am ${fmtDate(date)}. Mach's gut!`;
+  status.style.color = "#059669";
+
+  // reset
+  document.getElementById("top-moment").value = "";
+  document.getElementById("next-training").value = "";
+  shuffleQuestions();
+});
+
+/* =====================================================================
+   DASHBOARD VIEW
+===================================================================== */
+let charts = {};
+function destroyCharts(){
+  Object.values(charts).forEach(c => c && c.destroy());
+  charts = {};
+}
+
+function renderDashboard(){
+  destroyCharts();
+  const groupSel = document.getElementById("dash-group");
+  groupSel.innerHTML = Object.keys(DATA.groups).map(g => `<option>${g}</option>`).join("");
+  if (!groupSel.value && Object.keys(DATA.groups).length) groupSel.value = Object.keys(DATA.groups)[0];
+
+  const refreshWeeks = () => {
+    const group = groupSel.value;
+    const weeks = Array.from(new Set(
+      DATA.reflections.filter(r => r.group === group).map(r => isoWeek(r.date))
+    )).sort().reverse();
+    const sel = document.getElementById("dash-week");
+    if (weeks.length === 0) {
+      sel.innerHTML = `<option>${isoWeek(todayISO())} (aktuelle Woche)</option>`;
+    } else {
+      sel.innerHTML = weeks.map(w => {
+        const r = isoWeekRange(w);
+        return `<option value="${w}">${w} (${fmtDate(r.monday)}–${fmtDate(r.sunday)})</option>`;
+      }).join("");
+    }
+    renderDashContent();
+  };
+  groupSel.onchange = refreshWeeks;
+  document.getElementById("dash-week").onchange = renderDashContent;
+  refreshWeeks();
+}
+
+function renderDashContent(){
+  destroyCharts();
+  const group = document.getElementById("dash-group").value;
+  const week = document.getElementById("dash-week").value;
+  const reflections = DATA.reflections.filter(r => r.group === group && isoWeek(r.date) === week);
+
+  const empty = document.getElementById("dash-empty");
+  const content = document.getElementById("dash-content");
+  if (reflections.length === 0) {
+    empty.style.display = "block";
+    content.style.display = "none";
+    return;
+  }
+  empty.style.display = "none";
+  content.style.display = "block";
+
+  renderTeamView(group, week, reflections);
+  renderPlayerView(group, week, reflections);
+}
+
+function renderTeamView(group, week, reflections){
+  // Stats
+  const players = DATA.groups[group] || [];
+  const playersWithEntries = new Set(reflections.map(r => r.player));
+  const allScales = reflections.flatMap(r => r.answers.map(a => a.scale)).filter(s => typeof s === "number");
+  const avg = allScales.length ? (allScales.reduce((a,b)=>a+b,0)/allScales.length).toFixed(2) : "–";
+  const totalReflections = reflections.length;
+  const participationPct = players.length ? Math.round(playersWithEntries.size / players.length * 100) : 0;
+
+  document.getElementById("team-stats").innerHTML = `
+    <div class="stat-card"><div class="stat-label">Reflexionen</div><div class="stat-value">${totalReflections}</div><div class="stat-sub">in dieser Woche</div></div>
+    <div class="stat-card"><div class="stat-label">Aktive Spieler</div><div class="stat-value">${playersWithEntries.size}/${players.length}</div><div class="stat-sub">${participationPct}% Teilnahme</div></div>
+    <div class="stat-card"><div class="stat-label">Ø Bewertung</div><div class="stat-value">${avg}</div><div class="stat-sub">über alle Bereiche</div></div>
+    <div class="stat-card"><div class="stat-label">Fragen beantwortet</div><div class="stat-value">${allScales.length}</div><div class="stat-sub">insgesamt diese Woche</div></div>
+  `;
+
+  // Area averages (team)
+  const areaHost = document.getElementById("team-areas");
+  const areaData = Object.keys(AREA_META).map(area => {
+    const vals = reflections.flatMap(r => r.answers.filter(a => a.area === area).map(a => a.scale));
+    const a = vals.length ? vals.reduce((x,y)=>x+y,0)/vals.length : null;
+    return { area, label: AREA_META[area].label, color: AREA_META[area].color, avg: a, count: vals.length };
+  });
+  areaHost.innerHTML = areaData.map(a => `
+    <div class="area-summary-row">
+      <div style="width:200px;font-weight:600;">${a.label}</div>
+      <div class="area-bar"><div class="area-bar-fill" style="width:${a.avg ? (a.avg/5*100) : 0}%;background:${a.color};"></div></div>
+      <div style="width:80px;text-align:right;font-weight:700;color:${a.color};">${a.avg ? a.avg.toFixed(2) : "–"}</div>
+      <div style="width:80px;text-align:right;font-size:12px;color:#5b6471;">n=${a.count}</div>
+    </div>
+  `).join("");
+
+  // Participation chart
+  const playerCounts = players.map(p => reflections.filter(r => r.player === p).length);
+  charts.teamParticipation = new Chart(document.getElementById("chart-team-participation"), {
+    type: "bar",
+    data: {
+      labels: players,
+      datasets: [{
+        label: "Reflexionen",
+        data: playerCounts,
+        backgroundColor: playerCounts.map(c => c > 0 ? "#0f3460" : "#d9dde2")
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+    }
+  });
+
+  // Heatmap: areas (rows) × players (cols). We use stacked bar as a proxy because Chart.js has no native heatmap.
+  // Show one bar group per area, each bar = avg per player for that area.
+  const heatLabels = players;
+  const heatDatasets = Object.keys(AREA_META).map(area => ({
+    label: AREA_META[area].label,
+    backgroundColor: AREA_META[area].color,
+    data: players.map(p => {
+      const vals = reflections.filter(r => r.player === p).flatMap(r => r.answers.filter(a => a.area === area).map(a => a.scale));
+      return vals.length ? +(vals.reduce((x,y)=>x+y,0)/vals.length).toFixed(2) : null;
+    })
+  }));
+  charts.teamHeat = new Chart(document.getElementById("chart-team-heatmap"), {
+    type: "bar",
+    data: { labels: heatLabels, datasets: heatDatasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: "bottom" }, tooltip: { callbacks: {
+        label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y ?? "—"}`
+      } } },
+      scales: { y: { beginAtZero: true, max: 5 } }
+    }
+  });
+}
+
+function renderPlayerView(group, week, reflections){
+  const playerSel = document.getElementById("dash-player");
+  const allPlayers = (DATA.groups[group] || []).slice();
+  const activePlayers = new Set(reflections.map(r => r.player));
+  // Show ALL players from the group; mark inactive ones
+  if (allPlayers.length === 0) {
+    playerSel.innerHTML = `<option disabled selected>Keine Spieler in dieser Gruppe (siehe Verwaltung)</option>`;
+    document.getElementById("player-content").innerHTML = `<p style="color:#5b6471;font-size:14px;">Lege zuerst Spieler in der Verwaltung an.</p>`;
+    return;
+  }
+  // Sort: players with reflections first, then the rest
+  allPlayers.sort((a,b) => {
+    const aActive = activePlayers.has(a) ? 0 : 1;
+    const bActive = activePlayers.has(b) ? 0 : 1;
+    if (aActive !== bActive) return aActive - bActive;
+    return a.localeCompare(b);
+  });
+  playerSel.innerHTML = allPlayers.map(p => {
+    const active = activePlayers.has(p);
+    const cnt = reflections.filter(r => r.player === p).length;
+    return `<option value="${escapeHtml(p)}">${escapeHtml(p)}${active ? ` · ${cnt} Reflexion${cnt!==1?"en":""}` : " · (keine Eingaben)"}</option>`;
+  }).join("");
+
+  const renderForPlayer = () => {
+    const p = playerSel.value;
+    const pRefs = reflections.filter(r => r.player === p).sort((a,b) => a.date.localeCompare(b.date));
+
+    // Empty state per player
+    if (pRefs.length === 0) {
+      document.getElementById("player-content").innerHTML = `
+        <label for="dash-player">Spieler auswählen</label>
+        <select id="dash-player-placeholder" disabled style="opacity:0.5"></select>
+      `;
+      // Restore the dropdown structure so we keep using the real select
+      document.getElementById("player-content").innerHTML = `
+        <div class="empty-state" style="padding:30px 16px;">
+          <span class="emoji">💭</span>
+          <strong>${escapeHtml(p)} hat in dieser Woche noch nicht reflektiert.</strong>
+          <p>Sobald eine Reflexion gespeichert wird, erscheint hier die Auswertung. Du kannst oben einen anderen Spieler oder eine andere Woche wählen.</p>
+        </div>
+      `;
+      return;
+    }
+
+    // Player has data — rebuild full content scaffolding (in case it was replaced by empty state)
+    document.getElementById("player-content").innerHTML = `
+      <div class="stat-grid" id="player-stats"></div>
+      <h3>Verlauf der Bewertungen (über die Woche)</h3>
+      <div class="chart-wrap"><canvas id="chart-player-trend"></canvas></div>
+      <h3>Stärken-/Aufmerksamkeitsprofil pro Bereich</h3>
+      <div class="chart-wrap"><canvas id="chart-player-radar"></canvas></div>
+      <h3>⭐ Top-Momente der Woche</h3>
+      <div class="text-answer-list" id="player-top-moments"></div>
+      <h3>➡️ Vorsätze fürs nächste Training</h3>
+      <div class="text-answer-list" id="player-next-trainings"></div>
+      <h3>💬 Eigene Textantworten</h3>
+      <div class="text-answer-list" id="player-text-answers"></div>
+    `;
+
+    // stats
+    const scales = pRefs.flatMap(r => r.answers.map(a => a.scale)).filter(s => typeof s === "number");
+    const avg = scales.length ? (scales.reduce((a,b)=>a+b,0)/scales.length).toFixed(2) : "–";
+    const sessionCount = pRefs.length;
+    const lowest = scales.length ? Math.min(...scales) : "–";
+    const highest = scales.length ? Math.max(...scales) : "–";
+    document.getElementById("player-stats").innerHTML = `
+      <div class="stat-card"><div class="stat-label">Reflexionen</div><div class="stat-value">${sessionCount}</div><div class="stat-sub">diese Woche</div></div>
+      <div class="stat-card"><div class="stat-label">Ø Bewertung</div><div class="stat-value">${avg}</div><div class="stat-sub">über alle Antworten</div></div>
+      <div class="stat-card"><div class="stat-label">Tiefster Wert</div><div class="stat-value">${lowest}</div><div class="stat-sub">Aufmerksamkeit hier</div></div>
+      <div class="stat-card"><div class="stat-label">Höchster Wert</div><div class="stat-value">${highest}</div><div class="stat-sub">Stärke der Woche</div></div>
+    `;
+
+    // Verlauf
+    if (charts.playerTrend) charts.playerTrend.destroy();
+    charts.playerTrend = new Chart(document.getElementById("chart-player-trend"), {
+      type: "line",
+      data: {
+        labels: pRefs.map(r => fmtDate(r.date)),
+        datasets: Object.keys(AREA_META).map(area => ({
+          label: AREA_META[area].label,
+          borderColor: AREA_META[area].color,
+          backgroundColor: AREA_META[area].color + "33",
+          tension: 0.3,
+          spanGaps: true,
+          data: pRefs.map(r => {
+            const vals = r.answers.filter(a => a.area === area).map(a => a.scale);
+            return vals.length ? +(vals.reduce((x,y)=>x+y,0)/vals.length).toFixed(2) : null;
+          })
+        }))
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: "bottom" } },
+        scales: { y: { beginAtZero: true, max: 5 } }
+      }
+    });
+
+    // Radar
+    if (charts.playerRadar) charts.playerRadar.destroy();
+    const radarData = Object.keys(AREA_META).map(area => {
+      const vals = pRefs.flatMap(r => r.answers.filter(a => a.area === area).map(a => a.scale));
+      return vals.length ? +(vals.reduce((x,y)=>x+y,0)/vals.length).toFixed(2) : 0;
+    });
+    charts.playerRadar = new Chart(document.getElementById("chart-player-radar"), {
+      type: "radar",
+      data: {
+        labels: Object.values(AREA_META).map(a => a.label),
+        datasets: [{
+          label: p,
+          data: radarData,
+          backgroundColor: "rgba(15,52,96,0.15)",
+          borderColor: "#0f3460",
+          pointBackgroundColor: "#0f3460",
+          pointRadius: 4
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { r: { suggestedMin: 0, suggestedMax: 5, ticks: { stepSize: 1 } } }
+      }
+    });
+
+    // Top-Momente
+    const topMoments = pRefs.filter(r => r.topMoment).map(r => ({date: r.date, text: r.topMoment}));
+    document.getElementById("player-top-moments").innerHTML = topMoments.length
+      ? topMoments.map(t => `<div class="text-answer"><div class="meta">${fmtDate(t.date)}</div>${escapeHtml(t.text)}</div>`).join("")
+      : `<p style="color:#5b6471;font-size:13px;">Keine Top-Momente eingetragen.</p>`;
+
+    // Vorsätze
+    const nexts = pRefs.filter(r => r.nextTraining).map(r => ({date: r.date, text: r.nextTraining}));
+    document.getElementById("player-next-trainings").innerHTML = nexts.length
+      ? nexts.map(t => `<div class="text-answer"><div class="meta">${fmtDate(t.date)}</div>${escapeHtml(t.text)}</div>`).join("")
+      : `<p style="color:#5b6471;font-size:13px;">Keine Vorsätze eingetragen.</p>`;
+
+    // Textantworten
+    const textAns = pRefs.flatMap(r => r.answers.filter(a => a.scaleText).map(a => ({
+      date: r.date, area: a.area, topic: a.topic, scale: a.scale, text: a.scaleText
+    })));
+    document.getElementById("player-text-answers").innerHTML = textAns.length
+      ? textAns.map(t => `
+          <div class="text-answer" style="border-left-color:${AREA_META[t.area].color};">
+            <div class="meta">
+              ${fmtDate(t.date)} ·
+              <span class="badge area-${t.area}">${AREA_META[t.area].label}</span> ·
+              ${escapeHtml(t.topic)} · Bewertung: ${t.scale}
+            </div>
+            ${escapeHtml(t.text)}
+          </div>
+        `).join("")
+      : `<p style="color:#5b6471;font-size:13px;">Keine Textantworten in dieser Woche.</p>`;
+  };
+  playerSel.onchange = renderForPlayer;
+  renderForPlayer();
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+}
+
+/* =====================================================================
+   ADMIN VIEW
+===================================================================== */
+function renderAdmin(){
+  const sel = document.getElementById("admin-group-select");
+  const groups = Object.keys(DATA.groups);
+  sel.innerHTML = groups.map(g => `<option>${g}</option>`).join("");
+  const refreshPlayers = () => {
+    const g = sel.value;
+    const players = DATA.groups[g] || [];
+    document.getElementById("admin-players").innerHTML = players.map((p,i) => `
+      <div class="player-chip">${escapeHtml(p)} <span class="remove" data-idx="${i}">✕</span></div>
+    `).join("") || `<span style="color:#5b6471;font-size:13px;">Noch keine Spieler in dieser Gruppe.</span>`;
+    document.querySelectorAll("#admin-players .remove").forEach(r => {
+      r.onclick = () => {
+        const idx = Number(r.dataset.idx);
+        DATA.groups[g].splice(idx,1);
+        saveData(DATA); refreshPlayers();
+      };
+    });
+  };
+  sel.onchange = refreshPlayers;
+  refreshPlayers();
+
+  document.getElementById("add-player").onclick = () => {
+    const name = document.getElementById("new-player-name").value.trim();
+    if (!name) return;
+    const g = sel.value;
+    if (!DATA.groups[g].includes(name)) DATA.groups[g].push(name);
+    saveData(DATA);
+    document.getElementById("new-player-name").value = "";
+    refreshPlayers();
+  };
+  document.getElementById("new-player-name").onkeydown = (e) => {
+    if (e.key === "Enter") document.getElementById("add-player").click();
+  };
+  document.getElementById("add-group").onclick = () => {
+    const name = prompt("Name der neuen Gruppe (z.B. U16):");
+    if (!name) return;
+    if (!DATA.groups[name]) DATA.groups[name] = [];
+    saveData(DATA); renderAdmin();
+  };
+  document.getElementById("delete-group").onclick = () => {
+    const g = sel.value;
+    if (!g) return;
+    if (!confirm(`Gruppe "${g}" wirklich löschen? Reflexionen dieser Gruppe bleiben erhalten.`)) return;
+    delete DATA.groups[g];
+    saveData(DATA); renderAdmin();
+  };
+  document.getElementById("export-data").onclick = () => {
+    const blob = new Blob([JSON.stringify(DATA, null, 2)], {type: "application/json"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `reflexion-daten-${todayISO()}.json`;
+    a.click();
+  };
+  document.getElementById("import-data").onclick = () => document.getElementById("import-file").click();
+  document.getElementById("import-file").onchange = (e) => {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const merged = JSON.parse(reader.result);
+        // merge groups
+        for (const g of Object.keys(merged.groups || {})) {
+          if (!DATA.groups[g]) DATA.groups[g] = [];
+          for (const p of merged.groups[g]) if (!DATA.groups[g].includes(p)) DATA.groups[g].push(p);
+        }
+        // merge reflections by id
+        const known = new Set(DATA.reflections.map(r => r.id));
+        for (const r of (merged.reflections || [])) if (!known.has(r.id)) DATA.reflections.push(r);
+        saveData(DATA);
+        alert(`Import erfolgreich. ${merged.reflections?.length || 0} Reflexionen geprüft.`);
+        renderAdmin(); renderReflect();
+      } catch(err) {
+        alert("Fehler beim Import: " + err.message);
+      }
+    };
+    reader.readAsText(file);
+  };
+  document.getElementById("reset-data").onclick = () => {
+    if (!confirm("Wirklich ALLE Daten löschen? Das kann nicht rückgängig gemacht werden.")) return;
+    localStorage.removeItem(STORAGE_KEY);
+    DATA = loadData();
+    renderAdmin(); renderReflect();
+  };
+  document.getElementById("load-demo").onclick = () => {
+    if (!confirm("Demo-Daten für U20 dieser Woche werden hinzugefügt. Fortfahren?")) return;
+    seedDemoData();
+    saveData(DATA);
+    alert("Demo-Daten geladen. Wechsle ins Dashboard.");
+    renderAdmin(); renderReflect();
+  };
+}
+
+/* =====================================================================
+   DEMO DATA
+===================================================================== */
+function seedDemoData(){
+  const group = "U20";
+  const players = (DATA.groups[group] || []).slice(0, 10);
+  if (players.length === 0) return;
+  // build entries for the last 6 weekdays
+  const today = new Date();
+  const sample = (arr) => arr[Math.floor(Math.random()*arr.length)];
+  const topMoments = [
+    "Mein Tor im 6vs6 nach schöner Kombination", "Habe einen 1v1 gegen den Schnellsten gewonnen",
+    "Mein erstes wirklich präzises Diagonalspiel", "Coach hat mein Pressing gelobt",
+    "Habe nach Fehler sofort weitergemacht", "Konnte einen Mitspieler aufrichten als er frustriert war",
+    "Mein erster gelungener Kopfball-Treffer in der Halle", "Saubere Vorbereitung mit Schlafrhythmus eingehalten"
+  ];
+  const nextTrains = [
+    "Frühere Entscheidung beim Ballempfang", "Mehr Aktivität in der Restverteidigung",
+    "Konzentration in den letzten 10 Minuten halten", "Bewusster Linksfuß im Aufbau",
+    "Mehr Kommunikation in der Kette", "Aggressiveres Anlaufen im Gegenpressing",
+    "Ruhiger werden nach Fehlern", "Mehr Initiative ohne Ball"
+  ];
+  const textPool = {
+    fortschritt: ["Habe an meiner schwachen Seite gearbeitet", "Erkenne meinen Fortschritt im Stellungsspiel", "Bin schneller beim Umschalten geworden"],
+    mentalitaet: ["Habe 30 Minuten bewusst auf Erstkontakt geübt", "Bin nach 2 Fehlpässen ruhig geblieben", "Hab mich aus Komfortzone getraut beim Dribbling"],
+    transfer: ["Letzte Woche an Diagonalbällen gearbeitet, heute weitergeführt", "Werde am Wochenende auf Tempo achten", "Routinen wie Visualisierung gut umgesetzt"],
+    andere: ["Mannschaft war heute laut, hat mich gepusht", "Energie war nach 60 Minuten weg", "Hatte Spaß wie selten"]
+  };
+  for (let dOff = 6; dOff >= 1; dOff--) {
+    const d = new Date(today); d.setDate(today.getDate() - dOff);
+    const dStr = d.toISOString().slice(0,10);
+    // some players per day
+    const day_players = players.slice().sort(()=>Math.random()-0.5).slice(0, 4 + Math.floor(Math.random()*5));
+    for (const p of day_players) {
+      const qs = pickQuestions();
+      DATA.reflections.push({
+        id: uid(),
+        group, player: p, date: dStr, session: "haupttraining",
+        answers: qs.map(q => ({
+          area: q.area, topic: q.topic, text: q.text,
+          scale: 2 + Math.floor(Math.random()*4),  // 2-5
+          scaleText: Math.random() > 0.5 ? sample(textPool[q.area]) : ""
+        })),
+        topMoment: Math.random() > 0.4 ? sample(topMoments) : "",
+        nextTraining: Math.random() > 0.4 ? sample(nextTrains) : "",
+        savedAt: new Date().toISOString()
+      });
+    }
+  }
+}
+
+/* =====================================================================
+   BOOT
+===================================================================== */
+renderReflect();
+</script>
+</body>
+</html>
