@@ -1,0 +1,1411 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Trainings-Reflexion</title>
+<meta name="theme-color" content="#0F3460">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js"></script>
+<style>
+:root {
+  color-scheme: light;
+  --primary: #0F3460;
+  --primary-light: #16498A;
+  --bg: #F7F8FA;
+  --card: #FFFFFF;
+  --text: #1A1D23;
+  --muted: #5B6471;
+  --border: #D9DDE2;
+  --light-bg: #EEF1F5;
+  --area-fortschritt: #2563eb;
+  --area-mentalitaet: #d97706;
+  --area-transfer: #059669;
+  --area-andere: #7c3aed;
+  --success: #059669;
+  --error: #B91C1C;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  -webkit-tap-highlight-color: transparent;
+}
+.container { max-width: 720px; margin: 0 auto; padding: 16px; }
+.container.wide { max-width: 1080px; }
+
+/* Header */
+header.app-header {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+  color: #fff;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+header.app-header .title { font-size: 18px; font-weight: 700; cursor: pointer; }
+header.app-header .nav { display: flex; gap: 8px; align-items: center; }
+header.app-header .nav a {
+  color: rgba(255,255,255,0.85);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+header.app-header .nav a:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+/* Cards */
+.card {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.card h1 { margin: 0 0 12px 0; font-size: 22px; font-weight: 700; color: var(--primary); }
+.card h2 { margin: 0 0 12px 0; font-size: 17px; font-weight: 700; color: var(--primary); }
+.card h3 { margin: 20px 0 8px 0; font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+.card p { margin: 0 0 12px 0; }
+
+/* Forms */
+label { display: block; font-size: 14px; font-weight: 600; color: #2c3340; margin-bottom: 6px; }
+input, select, textarea {
+  width: 100%;
+  padding: 11px 14px;
+  font-size: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--text);
+  font-family: inherit;
+  margin-bottom: 12px;
+}
+textarea { resize: vertical; min-height: 70px; }
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(15,52,96,0.15);
+}
+
+/* Buttons */
+.btn {
+  display: inline-block;
+  padding: 12px 22px;
+  font-size: 15px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  text-decoration: none;
+  text-align: center;
+  transition: all 0.1s;
+}
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: #0a2845; }
+.btn-secondary { background: var(--light-bg); color: #2c3340; }
+.btn-secondary:hover { background: #DFE4EA; }
+.btn-danger { background: #FEF2F2; color: var(--error); }
+.btn-danger:hover { background: #FEE2E2; }
+.btn-block { display: block; width: 100%; }
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* Big choice buttons */
+.choice-grid { display: grid; gap: 12px; }
+.choice-btn {
+  display: block;
+  padding: 22px;
+  background: var(--card);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  text-align: left;
+  cursor: pointer;
+  text-decoration: none;
+  color: var(--text);
+  font-family: inherit;
+  width: 100%;
+}
+.choice-btn:hover { border-color: var(--primary); }
+.choice-btn .emoji { font-size: 32px; display: block; margin-bottom: 8px; }
+.choice-btn .label { font-size: 17px; font-weight: 700; }
+.choice-btn .desc { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+/* Question block */
+.question {
+  background: #F7F9FC;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 12px;
+  border-left: 3px solid var(--primary);
+}
+.question.area-fortschritt { border-left-color: var(--area-fortschritt); }
+.question.area-mentalitaet { border-left-color: var(--area-mentalitaet); }
+.question.area-transfer    { border-left-color: var(--area-transfer); }
+.question.area-andere      { border-left-color: var(--area-andere); }
+.question .meta { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+.badge { padding: 3px 8px; border-radius: 4px; background: #E0E7EF; color: var(--primary); }
+.badge.area-fortschritt { background: #DBEAFE; color: #1e40af; }
+.badge.area-mentalitaet { background: #FEF3C7; color: #92400e; }
+.badge.area-transfer    { background: #D1FAE5; color: #065f46; }
+.badge.area-andere      { background: #E9D5FF; color: #6b21a8; }
+.question .text { font-size: 16px; font-weight: 500; margin-bottom: 12px; color: var(--text); }
+
+/* Scale */
+.scale { display: flex; gap: 6px; margin-bottom: 8px; }
+.scale-btn {
+  flex: 1;
+  padding: 14px 4px;
+  text-align: center;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  background: #fff;
+  font-weight: 700;
+  font-size: 18px;
+  user-select: none;
+  transition: all 0.1s;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.scale-btn:hover { border-color: var(--primary); }
+.scale-btn.selected { background: var(--primary); color: #fff; border-color: var(--primary); }
+.scale-btn.stars-mode { font-size: 22px; color: #D9DDE2; }
+.scale-btn.stars-mode.selected { background: #F59E0B; color: #fff; border-color: #F59E0B; }
+.scale-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); padding: 0 4px; margin-top: -4px; }
+
+/* Stats */
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.stat-card { background: #F7F9FC; padding: 14px; border-radius: 8px; border-left: 3px solid var(--primary); }
+.stat-card .label { font-size: 11px; text-transform: uppercase; color: var(--muted); font-weight: 600; letter-spacing: 0.5px; }
+.stat-card .value { font-size: 24px; font-weight: 700; color: var(--primary); margin-top: 2px; }
+.stat-card .sub { font-size: 12px; color: var(--muted); }
+
+/* Charts */
+canvas { max-width: 100%; }
+.chart-wrap { position: relative; height: 280px; margin-bottom: 16px; }
+.chart-wrap-tall { height: 360px; }
+
+/* Notices */
+.notice { padding: 12px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 12px; }
+.notice.info    { background: #DBEAFE; color: #1e3a8a; border-left: 3px solid #2563eb; }
+.notice.warn    { background: #FEF9C3; color: #713f12; border-left: 3px solid #CA8A04; }
+.notice.success { background: #D1FAE5; color: #064e3b; border-left: 3px solid var(--success); }
+.notice.error   { background: #FEE2E2; color: #7f1d1d; border-left: 3px solid var(--error); }
+
+/* Lists */
+.text-list { display: flex; flex-direction: column; gap: 8px; }
+.text-item { background: #F7F9FC; padding: 10px 12px; border-radius: 8px; font-size: 13px; border-left: 3px solid var(--primary); }
+.text-item .meta { font-size: 11px; color: var(--muted); margin-bottom: 4px; font-weight: 600; }
+
+/* Empty state */
+.empty-state { text-align: center; padding: 30px 20px; color: var(--muted); font-size: 14px; }
+.empty-state .emoji { font-size: 40px; display: block; margin-bottom: 10px; }
+
+/* Filters */
+.filter-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 600px) { .filter-row { grid-template-columns: 1fr; } }
+
+/* Tabs */
+.tabs { display: flex; gap: 4px; background: var(--card); padding: 5px; border-radius: 10px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow-x: auto; }
+.tab { flex: 1; min-width: 90px; padding: 10px 12px; border: none; background: transparent; color: var(--muted); font-size: 14px; font-weight: 600; border-radius: 6px; cursor: pointer; white-space: nowrap; font-family: inherit; }
+.tab.active { background: var(--primary); color: #fff; }
+
+/* Toast */
+.toast {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+  background: var(--primary); color: #fff; padding: 12px 20px; border-radius: 8px;
+  z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  font-size: 14px; font-weight: 600;
+  opacity: 0; transition: opacity 0.2s;
+}
+.toast.show { opacity: 1; }
+.toast.error { background: var(--error); }
+
+/* Area summary bar */
+.area-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--light-bg); font-size: 14px; }
+.area-bar { flex: 1; height: 8px; background: var(--light-bg); border-radius: 4px; overflow: hidden; }
+.area-bar-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
+
+/* Admin */
+.player-row {
+  display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: #F7F9FC;
+  border-radius: 8px; margin-bottom: 6px;
+}
+.player-row .name { flex: 1; font-weight: 600; }
+.player-row .code { font-family: ui-monospace, "SF Mono", monospace; font-size: 12px; background: #fff; padding: 4px 8px; border-radius: 4px; }
+.player-row .actions { display: flex; gap: 4px; }
+.icon-btn { background: transparent; border: none; cursor: pointer; padding: 6px; color: var(--muted); font-size: 16px; }
+.icon-btn:hover { color: var(--primary); }
+.icon-btn.danger:hover { color: var(--error); }
+
+/* Setup screen */
+.setup-card { max-width: 560px; margin: 60px auto; }
+.code-block {
+  background: #1A1D23; color: #D1D5DB; font-family: ui-monospace, "SF Mono", monospace;
+  font-size: 12px; padding: 12px; border-radius: 8px; white-space: pre-wrap; word-break: break-all;
+  margin: 8px 0;
+}
+
+/* Helper text */
+small.help { display: block; font-size: 12px; color: var(--muted); margin-top: -8px; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <noscript>
+    <div style="padding:30px;font-family:system-ui;text-align:center;">
+      <h1>JavaScript ist deaktiviert</h1>
+      <p>Diese App braucht JavaScript. Bitte in den Browser-Einstellungen aktivieren.</p>
+    </div>
+  </noscript>
+  <div id="initial-loading" style="padding:30px;font-family:system-ui;text-align:center;color:#5B6471;">
+    <p>Lade…</p>
+    <p style="font-size:12px;">Falls diese Meldung mehr als 5 Sekunden bleibt: ⌘+Option+J öffnen und Konsole prüfen.</p>
+  </div>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+window.addEventListener("error", function(e){
+  const app = document.getElementById("app");
+  if (app && (!app.dataset.booted)) {
+    app.innerHTML = '<div style="padding:30px;font-family:system-ui;"><h1 style="color:#B91C1C;">JS-Fehler beim Laden</h1>'+
+      '<p><strong>'+ (e.message || "Unbekannt") +'</strong></p>'+
+      '<p style="font-size:13px;color:#5B6471;">In Datei: '+ (e.filename || "—") +', Zeile '+ (e.lineno || "?") +'</p>'+
+      '<p style="font-size:13px;">⌘+Option+J → Console öffnen für Details.</p></div>';
+  }
+});
+</script>
+
+<!--
+=========================================================================
+KONFIGURATION — HIER deine Supabase-Daten eintragen!
+Anleitung: Supabase-Dashboard → Project Settings → API
+=========================================================================
+-->
+<script>
+const SUPABASE_URL = "https://uqfycenxduhwgvyxycio.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVxZnljZW54ZHVod2d2eXh5Y2lvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwOTE1NDAsImV4cCI6MjA5NDY2NzU0MH0.M1njmkc6sGI_2JF2UB4joE_aPFj_UvPAz2nEGwXA2y4";
+</script>
+
+<script>
+/* =====================================================================
+   SETUP CHECK & SUPABASE INIT
+===================================================================== */
+const APP = document.getElementById("app");
+const setupNeeded = SUPABASE_URL.includes("DEINE") || SUPABASE_ANON_KEY.includes("DEIN");
+
+let db = null;
+let supabaseInitError = null;
+if (!setupNeeded) {
+  try {
+    if (!window.supabase || typeof window.supabase.createClient !== "function") {
+      throw new Error("Supabase-Library nicht geladen (window.supabase fehlt). CDN-Problem oder Netzwerk-Blockade?");
+    }
+    db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  } catch(e) {
+    supabaseInitError = e;
+    console.error("Supabase init failed:", e);
+  }
+}
+
+/* =====================================================================
+   AREA META & CONSTANTS
+===================================================================== */
+const AREA_META = {
+  fortschritt: { label: "Fortschritt",                       color: "#2563eb" },
+  mentalitaet: { label: "Mentalität & Lernbereitschaft",     color: "#d97706" },
+  transfer:    { label: "Transfer & Kontinuität",            color: "#059669" },
+  andere:      { label: "Andere (Energie/Team/Coach)",       color: "#7c3aed" }
+};
+
+/* =====================================================================
+   STATE
+===================================================================== */
+const State = {
+  user: null,              // trainer auth user (Supabase user)
+  player: null,            // player session (for /r/<code> and /me/<code>)
+  groups: [],
+  charts: {}
+};
+
+/* =====================================================================
+   UTILITY HELPERS
+===================================================================== */
+function el(tag, attrs = {}, ...children){
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") e.className = v;
+    else if (k === "html") e.innerHTML = v;
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else if (v !== undefined && v !== null) e.setAttribute(k, v);
+  }
+  for (const c of children.flat()) {
+    if (c == null) continue;
+    e.appendChild(typeof c === "string" ? document.createTextNode(c) : c);
+  }
+  return e;
+}
+function clear(){ APP.innerHTML = ""; destroyCharts(); }
+function destroyCharts(){ Object.values(State.charts).forEach(c => c && c.destroy()); State.charts = {}; }
+function escapeHtml(s){
+  return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+}
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+function fmtDate(d){
+  if (!d) return "";
+  const x = new Date(d + "T00:00:00");
+  return x.toLocaleDateString("de-DE", { weekday:"short", day:"2-digit", month:"2-digit" });
+}
+function isoWeek(dateStr){
+  if (!dateStr) return "";
+  const d = new Date(dateStr + "T00:00:00");
+  const target = new Date(d.valueOf());
+  const dayNr = (d.getDay() + 6) % 7;
+  target.setDate(target.getDate() - dayNr + 3);
+  const firstThursday = target.valueOf();
+  target.setMonth(0, 1);
+  if (target.getDay() !== 4) target.setMonth(0, 1 + ((4 - target.getDay()) + 7) % 7);
+  const week = 1 + Math.ceil((firstThursday - target) / 604800000);
+  return `${d.getFullYear()}-W${String(week).padStart(2,"0")}`;
+}
+function isoWeekRange(weekKey){
+  const [year, w] = weekKey.split("-W").map(Number);
+  const simple = new Date(year, 0, 1 + (w - 1) * 7);
+  const monday = new Date(simple);
+  if (simple.getDay() <= 4) monday.setDate(simple.getDate() - simple.getDay() + 1);
+  else monday.setDate(simple.getDate() + 8 - simple.getDay());
+  const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
+  return { monday: monday.toISOString().slice(0,10), sunday: sunday.toISOString().slice(0,10) };
+}
+function toast(msg, kind = "info"){
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className = "toast show " + (kind === "error" ? "error" : "");
+  clearTimeout(window.__toastTimer);
+  window.__toastTimer = setTimeout(() => { t.className = "toast"; }, 3000);
+}
+function generateAccessCode(name, groupId){
+  const base = name.toLowerCase()
+    .replace(/[äöü]/g, c => ({"ä":"ae","ö":"oe","ü":"ue"}[c]))
+    .replace(/ß/g, "ss")
+    .replace(/[^a-z]/g, "")
+    .slice(0, 6) || "x";
+  const rand = Math.random().toString(36).slice(2, 6);
+  return `${groupId}-${base}-${rand}`;
+}
+
+/* =====================================================================
+   HEADER
+===================================================================== */
+function renderHeader(opts = {}){
+  const nav = [];
+  if (opts.showPlayerNav) {
+    nav.push(el("a", { href: `#/r/${opts.code}`, onclick: () => true }, "📝 Reflektieren"));
+    nav.push(el("a", { href: `#/me/${opts.code}`, onclick: () => true }, "📊 Meine Daten"));
+  }
+  if (State.user) {
+    nav.push(el("a", { href: "#/trainer", onclick: () => true }, "📊 Dashboard"));
+    nav.push(el("a", { href: "#/admin", onclick: () => true }, "⚙️ Verwaltung"));
+    nav.push(el("a", { href: "#", onclick: async (e) => { e.preventDefault(); await db.auth.signOut(); State.user = null; location.hash = "#/"; } }, "Abmelden"));
+  } else if (!opts.showPlayerNav) {
+    nav.push(el("a", { href: "#/trainer", onclick: () => true }, "🧑‍🏫 Trainer-Login"));
+  }
+  return el("header", { class: "app-header" },
+    el("div", { class: "title", onclick: () => { location.hash = "#/"; } }, "🏆 Trainings-Reflexion"),
+    el("div", { class: "nav" }, ...nav)
+  );
+}
+
+/* =====================================================================
+   SETUP / ERROR VIEW
+===================================================================== */
+function renderSetupRequired(){
+  clear();
+  APP.appendChild(el("div", { class: "container setup-card" },
+    el("div", { class: "card" },
+      el("h1", {}, "🛠 Konfiguration nötig"),
+      el("p", {}, "Diese Web-App ist noch nicht mit deinem Supabase-Projekt verbunden."),
+      el("p", {}, "Öffne diese HTML-Datei in einem Editor (z.B. VS Code, Notepad) und ersetze die zwei Platzhalter am Anfang:"),
+      el("div", { class: "code-block", html: 'const SUPABASE_URL = "https://<deine-projekt-id>.supabase.co";<br>const SUPABASE_ANON_KEY = "ey...";' }),
+      el("p", {}, "Beide Werte findest du im Supabase-Dashboard unter "),
+      el("p", {}, el("strong", {}, "Project Settings → API → Project URL & anon public key.")),
+      el("p", {}, "Die ausführliche Setup-Anleitung liegt als Word-Dokument neben dieser Datei.")
+    )
+  ));
+}
+
+/* =====================================================================
+   LANDING / HOME
+===================================================================== */
+async function renderHome(){
+  clear();
+  // already signed in?
+  if (db) {
+    const { data: { user } } = await db.auth.getUser();
+    State.user = user;
+  }
+  if (State.user) {
+    location.hash = "#/trainer";
+    return;
+  }
+
+  APP.appendChild(renderHeader());
+  APP.appendChild(el("div", { class: "container" },
+    el("div", { class: "card" },
+      el("h1", {}, "Wer bist du?"),
+      el("p", {}, "Wähle deinen Modus."),
+      el("div", { class: "choice-grid" },
+        el("button", { class: "choice-btn", onclick: () => location.hash = "#/player-entry" },
+          el("span", { class: "emoji" }, "⚽"),
+          el("span", { class: "label" }, "Ich bin Spieler"),
+          el("span", { class: "desc" }, "Reflexion nach dem Training + meine eigene Auswertung sehen")
+        ),
+        el("button", { class: "choice-btn", onclick: () => location.hash = "#/trainer" },
+          el("span", { class: "emoji" }, "🧑‍🏫"),
+          el("span", { class: "label" }, "Ich bin Trainer"),
+          el("span", { class: "desc" }, "Dashboard für Team und Einzelspieler")
+        )
+      )
+    )
+  ));
+}
+
+/* =====================================================================
+   PLAYER ENTRY (Access-Code)
+===================================================================== */
+function renderPlayerEntry(){
+  clear();
+  APP.appendChild(renderHeader());
+  const code = el("input", { type: "text", placeholder: "z.B. u18-max-x7p9", autocomplete: "off" });
+  const submit = () => {
+    const c = code.value.trim().toLowerCase();
+    if (!c) { toast("Bitte deinen Code eintragen", "error"); return; }
+    location.hash = `#/r/${c}`;
+  };
+  code.addEventListener("keydown", e => { if (e.key === "Enter") submit(); });
+  APP.appendChild(el("div", { class: "container" },
+    el("div", { class: "card" },
+      el("h1", {}, "Dein Zugangscode"),
+      el("p", {}, "Trag deinen persönlichen Zugangscode ein. Den hast du von deinem Trainer bekommen."),
+      el("label", { for: "code" }, "Zugangscode"),
+      code,
+      el("small", { class: "help" }, "Tipp: Speichere die Seite nach dem Login als Lesezeichen — dann musst du den Code nie wieder eintippen."),
+      el("button", { class: "btn btn-primary btn-block", onclick: submit }, "Weiter")
+    )
+  ));
+  code.focus();
+}
+
+/* =====================================================================
+   PLAYER REFLECT
+===================================================================== */
+async function renderPlayerReflect(code){
+  clear();
+  APP.appendChild(renderHeader({ showPlayerNav: true, code }));
+  const main = el("div", { class: "container" });
+  APP.appendChild(main);
+  main.appendChild(el("div", { class: "card empty-state" }, el("span", {}, "Lade…")));
+
+  // 1) Spieler laden
+  const { data: playerRows, error: pErr } = await db.rpc("get_player_by_code", { code });
+  if (pErr || !playerRows || playerRows.length === 0) {
+    main.innerHTML = "";
+    main.appendChild(el("div", { class: "card" },
+      el("h2", {}, "❌ Code ungültig"),
+      el("p", {}, "Dein Code wurde nicht gefunden. Frag deinen Trainer nach einem neuen Code."),
+      el("a", { href: "#/player-entry", class: "btn btn-secondary" }, "Code erneut eingeben")
+    ));
+    return;
+  }
+  const player = playerRows[0];
+  State.player = player;
+
+  // 2) Fragen laden
+  const { data: questions } = await db.rpc("get_questions_for_group", { grp_id: player.group_id });
+  if (!questions || questions.length === 0) {
+    main.innerHTML = "";
+    main.appendChild(el("div", { class: "card" }, el("h2", {}, "Keine Fragen konfiguriert für diese Gruppe.")));
+    return;
+  }
+
+  main.innerHTML = "";
+  // Header card
+  main.appendChild(el("div", { class: "card" },
+    el("h1", {}, `Hi ${escapeHtml(player.name)} 👋`),
+    el("p", {}, `Wie war dein Training in der ${escapeHtml(player.group_name)}? Beantworte ${player.all_required ? "alle Fragen" : "mindestens 3 Fragen"} und teile deinen Top-Moment.`)
+  ));
+
+  // Meta
+  const metaCard = el("div", { class: "card" });
+  metaCard.appendChild(el("h2", {}, "Wann war's?"));
+  const dateInput = el("input", { type: "date", id: "ref-date" });
+  dateInput.value = todayISO();
+  const sessionSelect = el("select", { id: "ref-session" });
+  for (const s of [
+    ["haupttraining","Haupttraining"], ["techniktraining","Techniktraining"],
+    ["krafttraining","Kraft / Athletik"], ["spiel","Spiel / Test"],
+    ["individual","Individualtraining"], ["sonstiges","Sonstiges"]
+  ]) sessionSelect.appendChild(el("option", { value: s[0] }, s[1]));
+  metaCard.appendChild(el("div", { class: "filter-row" },
+    el("div", {}, el("label", {}, "Datum"), dateInput),
+    el("div", {}, el("label", {}, "Welche Einheit?"), sessionSelect)
+  ));
+  main.appendChild(metaCard);
+
+  // Questions
+  const isStars = player.scale_type === "stars";
+  const answers = {}; // questionId -> scale_value
+
+  for (const q of questions) {
+    const qBlock = el("div", { class: "card" });
+    const areaCls = `area-${q.area_id}`;
+    qBlock.appendChild(el("div", { class: `question ${areaCls}` },
+      el("div", { class: "meta" },
+        el("span", { class: `badge ${areaCls}` }, AREA_META[q.area_id]?.label || q.area_id),
+        el("span", { class: "badge" }, q.topic)
+      ),
+      el("div", { class: "text" }, q.question_text)
+    ));
+    const scale = el("div", { class: "scale", "data-q": q.id });
+    for (let v = 1; v <= 5; v++) {
+      const btn = el("div", { class: `scale-btn ${isStars ? "stars-mode" : ""}`, "data-val": v }, isStars ? "★" : String(v));
+      btn.addEventListener("click", () => {
+        scale.querySelectorAll(".scale-btn").forEach(b => b.classList.remove("selected"));
+        // For stars: highlight all up to clicked
+        if (isStars) {
+          for (let i = 0; i < v; i++) scale.children[i].classList.add("selected");
+        } else {
+          btn.classList.add("selected");
+        }
+        answers[q.id] = v;
+      });
+      scale.appendChild(btn);
+    }
+    qBlock.appendChild(scale);
+    qBlock.appendChild(el("div", { class: "scale-labels" },
+      el("span", {}, q.scale_low_label || "wenig"),
+      el("span", {}, q.scale_high_label || "viel")
+    ));
+    main.appendChild(qBlock);
+  }
+
+  // Area-Texte (optional, gruppiert wenn Spieler will, später)
+
+  // Top-Moment + Vorsatz
+  const tmt = el("textarea", { id: "ref-top", placeholder: "Was war heute mein bester Moment?" });
+  const nxt = el("textarea", { id: "ref-next", placeholder: "Was nehme ich mit ins nächste Training?" });
+  main.appendChild(el("div", { class: "card" },
+    el("h2", {}, "Zum Abschluss"),
+    el("label", {}, "⭐ Mein Top-Moment heute"),
+    tmt,
+    el("label", {}, "➡️ Was nehme ich ins nächste Training mit?"),
+    nxt
+  ));
+
+  // Submit
+  const submitBtn = el("button", { class: "btn btn-primary btn-block" }, "Reflexion speichern");
+  submitBtn.addEventListener("click", async () => {
+    const required = player.all_required;
+    const filled = Object.entries(answers).filter(([_,v]) => v != null);
+    const minRequired = required ? questions.length : 3;
+    if (filled.length < minRequired) {
+      toast(required
+        ? `Bitte alle ${questions.length} Fragen beantworten`
+        : `Bitte mindestens ${minRequired} Fragen beantworten (${filled.length}/${minRequired})`, "error");
+      return;
+    }
+    submitBtn.disabled = true; submitBtn.textContent = "Speichere…";
+    const { data, error } = await db.rpc("submit_reflection", {
+      p_access_code: code,
+      p_session_date: dateInput.value,
+      p_session_type: sessionSelect.value,
+      p_top_moment: tmt.value.trim() || null,
+      p_next_training: nxt.value.trim() || null,
+      p_area_texts: {},
+      p_answers: filled.map(([qid, v]) => ({ question_id: qid, scale_value: v }))
+    });
+    if (error) { toast("Fehler: " + error.message, "error"); submitBtn.disabled = false; submitBtn.textContent = "Reflexion speichern"; return; }
+    toast("✅ Gespeichert. Mach's gut!");
+    setTimeout(() => location.hash = `#/me/${code}`, 1000);
+  });
+  main.appendChild(el("div", { class: "card" }, submitBtn));
+}
+
+/* =====================================================================
+   PLAYER OWN DASHBOARD
+===================================================================== */
+async function renderPlayerMe(code){
+  clear();
+  APP.appendChild(renderHeader({ showPlayerNav: true, code }));
+  const main = el("div", { class: "container wide" });
+  APP.appendChild(main);
+
+  const { data: playerRows } = await db.rpc("get_player_by_code", { code });
+  if (!playerRows || playerRows.length === 0) {
+    main.appendChild(el("div", { class: "card" }, el("h2", {}, "Code ungültig.")));
+    return;
+  }
+  const player = playerRows[0];
+
+  const { data: rows } = await db.rpc("get_my_reflections", { p_access_code: code });
+  const reflections = aggregateReflections(rows || []);
+
+  main.appendChild(el("div", { class: "card" },
+    el("h1", {}, `📊 ${escapeHtml(player.name)} · ${escapeHtml(player.group_name)}`),
+    el("p", {}, `Deine bisherigen Reflexionen — sortiert nach Datum.`),
+    el("a", { href: `#/r/${code}`, class: "btn btn-primary" }, "+ Neue Reflexion")
+  ));
+
+  if (reflections.length === 0) {
+    main.appendChild(el("div", { class: "card empty-state" },
+      el("span", { class: "emoji" }, "📭"),
+      el("strong", {}, "Noch keine Reflexion"),
+      el("p", {}, "Klick oben auf '+ Neue Reflexion', um loszulegen.")
+    ));
+    return;
+  }
+
+  renderPersonView(main, player.name, reflections, "Deine");
+}
+
+/* =====================================================================
+   TRAINER AUTH & DASHBOARD
+===================================================================== */
+async function renderTrainerLogin(){
+  clear();
+  APP.appendChild(renderHeader());
+  const emailInput = el("input", { type: "email", placeholder: "deine@email.de" });
+  const status = el("div");
+  const submit = async () => {
+    const email = emailInput.value.trim();
+    if (!email) return;
+    const { error } = await db.auth.signInWithOtp({
+      email, options: { emailRedirectTo: location.origin + location.pathname }
+    });
+    if (error) { status.innerHTML = `<div class="notice error">${escapeHtml(error.message)}</div>`; return; }
+    status.innerHTML = `<div class="notice success">✅ Mail unterwegs. Öffne den Link in deinem Postfach.</div>`;
+  };
+  emailInput.addEventListener("keydown", e => { if (e.key === "Enter") submit(); });
+  APP.appendChild(el("div", { class: "container" },
+    el("div", { class: "card" },
+      el("h1", {}, "🧑‍🏫 Trainer-Login"),
+      el("p", {}, "Gib deine E-Mail-Adresse ein. Wir schicken dir einen Magic-Link — kein Passwort nötig."),
+      el("label", {}, "E-Mail"),
+      emailInput,
+      el("button", { class: "btn btn-primary btn-block", onclick: submit }, "Login-Link schicken"),
+      status
+    )
+  ));
+}
+
+async function renderTrainerDashboard(){
+  clear();
+  APP.appendChild(renderHeader());
+  const main = el("div", { class: "container wide" });
+  APP.appendChild(main);
+  main.appendChild(el("div", { class: "card empty-state" }, el("span", {}, "Lade…")));
+
+  // Parallel laden: Stammdaten + Reflexionen
+  const [teamsRes, tgsRes, refsRes] = await Promise.all([
+    db.from("teams").select("*").order("display_order"),
+    db.from("training_groups").select("*").order("display_order"),
+    db.from("reflection_details").select("*")
+  ]);
+  const teams = teamsRes.data || [];
+  const trainingGroups = tgsRes.data || [];
+  const reflections = aggregateReflections(refsRes.data || []);
+
+  main.innerHTML = "";
+  main.appendChild(el("div", { class: "card" },
+    el("h1", {}, "Trainer-Dashboard"),
+    el("p", {}, "Gesamt-Auswertung über alle Spieler. Mit den drei Filtern unten kannst du Mannschaft, Trainingsgruppe und Jahrgang einschränken.")
+  ));
+
+  // Filter-Card
+  const filterCard = el("div", { class: "card" });
+  filterCard.appendChild(el("h2", {}, "🔍 Filter"));
+  const teamSel = el("select");
+  teamSel.appendChild(el("option", { value: "" }, "Alle Mannschaften"));
+  teams.forEach(t => teamSel.appendChild(el("option", { value: t.id }, t.name)));
+  const tgSel = el("select");
+  tgSel.appendChild(el("option", { value: "" }, "Alle Trainingsgruppen"));
+  trainingGroups.forEach(tg => tgSel.appendChild(el("option", { value: tg.id }, tg.name)));
+  const yearSel = el("select");
+  yearSel.appendChild(el("option", { value: "" }, "Alle Jahrgänge"));
+  const yearsAvail = Array.from(new Set(reflections.map(r => r.birth_year).filter(Boolean))).sort();
+  yearsAvail.forEach(y => yearSel.appendChild(el("option", { value: String(y) }, String(y))));
+  const weeks = Array.from(new Set(reflections.map(r => isoWeek(r.session_date)))).filter(Boolean).sort().reverse();
+  const weekSel = el("select");
+  if (weeks.length === 0) weekSel.appendChild(el("option", { value: "" }, "(noch keine Daten)"));
+  else weeks.forEach(w => {
+    const r = isoWeekRange(w);
+    weekSel.appendChild(el("option", { value: w }, `${w} (${fmtDate(r.monday)}–${fmtDate(r.sunday)})`));
+  });
+  const rangeSel = el("select");
+  rangeSel.appendChild(el("option", { value: "all" }, "Gesamter Zeitraum"));
+  rangeSel.appendChild(el("option", { value: "week" }, "Nur diese Woche"));
+
+  filterCard.appendChild(el("div", { class: "filter-row" },
+    el("div", {}, el("label", {}, "Jugendmannschaft"), teamSel),
+    el("div", {}, el("label", {}, "Trainingsgruppe"), tgSel)
+  ));
+  filterCard.appendChild(el("div", { class: "filter-row" },
+    el("div", {}, el("label", {}, "Jahrgang"), yearSel),
+    el("div", {}, el("label", {}, "Zeitraum"), rangeSel)
+  ));
+  filterCard.appendChild(el("div", {}, el("label", {}, "Woche"), weekSel));
+  main.appendChild(filterCard);
+
+  const content = el("div");
+  main.appendChild(content);
+
+  const applyFilters = (refs) => refs.filter(r => {
+    if (teamSel.value && r.team_id !== teamSel.value) return false;
+    if (tgSel.value && r.training_group_id !== tgSel.value) return false;
+    if (yearSel.value && String(r.birth_year) !== yearSel.value) return false;
+    if (rangeSel.value === "week" && weekSel.value && isoWeek(r.session_date) !== weekSel.value) return false;
+    return true;
+  });
+
+  const render = () => {
+    destroyCharts();
+    content.innerHTML = "";
+    const scoped = applyFilters(reflections);
+    if (scoped.length === 0) {
+      content.appendChild(el("div", { class: "card empty-state" },
+        el("span", { class: "emoji" }, "📭"),
+        el("strong", {}, "Keine Reflexionen mit diesen Filtern"),
+        el("p", {}, "Probier weniger Einschränkungen oder einen anderen Zeitraum.")
+      ));
+      return;
+    }
+    // Team-Ansicht
+    const teamCard = el("div", { class: "card" });
+    teamCard.appendChild(el("h2", {}, "👥 Team-Sicht"));
+    renderTeamStats(teamCard, scoped, null);
+    content.appendChild(teamCard);
+
+    // Einzelspieler
+    const players = Array.from(new Set(scoped.map(r => r.player_name))).sort();
+    const playerCard = el("div", { class: "card" });
+    playerCard.appendChild(el("h2", {}, "👤 Einzelspieler"));
+    const playerSel = el("select");
+    players.forEach(p => playerSel.appendChild(el("option", {}, p)));
+    playerCard.appendChild(el("label", {}, "Spieler auswählen"));
+    playerCard.appendChild(playerSel);
+    const playerHost = el("div");
+    playerCard.appendChild(playerHost);
+    const renderForPlayer = () => {
+      const refs = scoped.filter(r => r.player_name === playerSel.value);
+      playerHost.innerHTML = "";
+      renderPersonView(playerHost, playerSel.value, refs, "");
+    };
+    playerSel.addEventListener("change", renderForPlayer);
+    content.appendChild(playerCard);
+    renderForPlayer();
+  };
+
+  [teamSel, tgSel, yearSel, weekSel, rangeSel].forEach(s => s.addEventListener("change", render));
+  render();
+}
+
+function renderTeamStats(host, reflections, group){
+  const players = Array.from(new Set(reflections.map(r => r.player_name)));
+  const allScales = reflections.flatMap(r => r.answers.map(a => a.scale)).filter(s => s != null);
+  const avg = allScales.length ? (allScales.reduce((a,b)=>a+b,0)/allScales.length).toFixed(2) : "–";
+
+  const stats = el("div", { class: "stat-grid" });
+  stats.appendChild(el("div", { class: "stat-card" },
+    el("div", { class: "label" }, "Reflexionen"),
+    el("div", { class: "value" }, String(reflections.length)),
+    el("div", { class: "sub" }, "im Zeitraum")));
+  stats.appendChild(el("div", { class: "stat-card" },
+    el("div", { class: "label" }, "Aktive Spieler"),
+    el("div", { class: "value" }, String(players.length)),
+    el("div", { class: "sub" }, "mit Eingabe")));
+  stats.appendChild(el("div", { class: "stat-card" },
+    el("div", { class: "label" }, "Ø Bewertung"),
+    el("div", { class: "value" }, avg),
+    el("div", { class: "sub" }, "alle Bereiche")));
+  stats.appendChild(el("div", { class: "stat-card" },
+    el("div", { class: "label" }, "Antworten gesamt"),
+    el("div", { class: "value" }, String(allScales.length)),
+    el("div", { class: "sub" }, "Skala 1–5")));
+  host.appendChild(stats);
+
+  // Area averages
+  host.appendChild(el("h3", {}, "Durchschnitt pro Bereich"));
+  const areaHost = el("div");
+  Object.entries(AREA_META).forEach(([area, meta]) => {
+    const vals = reflections.flatMap(r => r.answers.filter(a => a.area_id === area).map(a => a.scale));
+    if (vals.length === 0) return;
+    const a = vals.reduce((x,y)=>x+y,0)/vals.length;
+    areaHost.appendChild(el("div", { class: "area-row" },
+      el("div", { style: "width:240px;font-weight:600;" }, meta.label),
+      el("div", { class: "area-bar" }, el("div", { class: "area-bar-fill", style: `width:${a/5*100}%;background:${meta.color};` })),
+      el("div", { style: `width:70px;text-align:right;font-weight:700;color:${meta.color};` }, a.toFixed(2)),
+      el("div", { style: "width:60px;text-align:right;font-size:12px;color:var(--muted);" }, `n=${vals.length}`)
+    ));
+  });
+  host.appendChild(areaHost);
+
+  // Participation chart
+  host.appendChild(el("h3", {}, "Reflexionen pro Spieler"));
+  const partCanvas = el("canvas");
+  host.appendChild(el("div", { class: "chart-wrap" }, partCanvas));
+  setTimeout(() => {
+    const playerCounts = players.map(p => reflections.filter(r => r.player_name === p).length);
+    State.charts.participation = new Chart(partCanvas, {
+      type: "bar",
+      data: { labels: players, datasets: [{ label: "Reflexionen", data: playerCounts, backgroundColor: "#0F3460" }] },
+      options: { responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+    });
+  }, 50);
+
+  // Heatmap
+  host.appendChild(el("h3", {}, "Themen-Heatmap (Bereiche × Spieler)"));
+  const heatCanvas = el("canvas");
+  host.appendChild(el("div", { class: "chart-wrap chart-wrap-tall" }, heatCanvas));
+  setTimeout(() => {
+    const heatDatasets = Object.entries(AREA_META).map(([area, meta]) => ({
+      label: meta.label, backgroundColor: meta.color,
+      data: players.map(p => {
+        const vals = reflections.filter(r => r.player_name === p)
+          .flatMap(r => r.answers.filter(a => a.area_id === area).map(a => a.scale));
+        return vals.length ? +(vals.reduce((x,y)=>x+y,0)/vals.length).toFixed(2) : null;
+      })
+    }));
+    State.charts.heatmap = new Chart(heatCanvas, {
+      type: "bar",
+      data: { labels: players, datasets: heatDatasets },
+      options: { responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: "bottom" } },
+        scales: { y: { beginAtZero: true, max: 5 } } }
+    });
+  }, 50);
+}
+
+function renderPersonView(host, name, reflections, prefix){
+  if (reflections.length === 0) {
+    host.appendChild(el("div", { class: "empty-state", style: "padding:30px;" },
+      el("span", { class: "emoji" }, "💭"),
+      el("strong", {}, `${prefix || name} ${prefix ? "Daten" : ""} sind leer im Zeitraum.`)));
+    return;
+  }
+  const sorted = reflections.slice().sort((a,b) => a.session_date.localeCompare(b.session_date));
+  const scales = sorted.flatMap(r => r.answers.map(a => a.scale)).filter(s => s != null);
+  const avg = scales.length ? (scales.reduce((a,b)=>a+b,0)/scales.length).toFixed(2) : "–";
+
+  const stats = el("div", { class: "stat-grid" });
+  stats.appendChild(el("div", { class: "stat-card" },
+    el("div", { class: "label" }, "Reflexionen"),
+    el("div", { class: "value" }, String(sorted.length)),
+    el("div", { class: "sub" }, "im Zeitraum")));
+  stats.appendChild(el("div", { class: "stat-card" },
+    el("div", { class: "label" }, "Ø Bewertung"),
+    el("div", { class: "value" }, avg)));
+  stats.appendChild(el("div", { class: "stat-card" },
+    el("div", { class: "label" }, "Tiefster Wert"),
+    el("div", { class: "value" }, scales.length ? String(Math.min(...scales)) : "–")));
+  stats.appendChild(el("div", { class: "stat-card" },
+    el("div", { class: "label" }, "Höchster Wert"),
+    el("div", { class: "value" }, scales.length ? String(Math.max(...scales)) : "–")));
+  host.appendChild(stats);
+
+  // Trend
+  host.appendChild(el("h3", {}, "Verlauf der Bewertungen"));
+  const trendCanvas = el("canvas");
+  host.appendChild(el("div", { class: "chart-wrap" }, trendCanvas));
+  setTimeout(() => {
+    const id = "trend_" + Math.random().toString(36).slice(2);
+    State.charts[id] = new Chart(trendCanvas, {
+      type: "line",
+      data: {
+        labels: sorted.map(r => fmtDate(r.session_date)),
+        datasets: Object.entries(AREA_META).map(([area, meta]) => ({
+          label: meta.label,
+          borderColor: meta.color,
+          backgroundColor: meta.color + "33",
+          tension: 0.3,
+          spanGaps: true,
+          data: sorted.map(r => {
+            const vals = r.answers.filter(a => a.area_id === area).map(a => a.scale);
+            return vals.length ? +(vals.reduce((x,y)=>x+y,0)/vals.length).toFixed(2) : null;
+          })
+        }))
+      },
+      options: { responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: "bottom" } },
+        scales: { y: { beginAtZero: true, max: 5 } } }
+    });
+  }, 50);
+
+  // Radar
+  host.appendChild(el("h3", {}, "Stärken-/Aufmerksamkeitsprofil"));
+  const radarCanvas = el("canvas");
+  host.appendChild(el("div", { class: "chart-wrap" }, radarCanvas));
+  setTimeout(() => {
+    const data = Object.keys(AREA_META).map(area => {
+      const vals = sorted.flatMap(r => r.answers.filter(a => a.area_id === area).map(a => a.scale));
+      return vals.length ? +(vals.reduce((x,y)=>x+y,0)/vals.length).toFixed(2) : 0;
+    });
+    const id = "radar_" + Math.random().toString(36).slice(2);
+    State.charts[id] = new Chart(radarCanvas, {
+      type: "radar",
+      data: { labels: Object.values(AREA_META).map(m => m.label),
+        datasets: [{ label: name, data, backgroundColor: "rgba(15,52,96,0.15)", borderColor: "#0F3460", pointBackgroundColor: "#0F3460", pointRadius: 4 }]
+      },
+      options: { responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { r: { suggestedMin: 0, suggestedMax: 5, ticks: { stepSize: 1 } } } }
+    });
+  }, 50);
+
+  // Top-Momente
+  host.appendChild(el("h3", {}, "⭐ Top-Momente"));
+  const topMoments = sorted.filter(r => r.top_moment);
+  if (topMoments.length === 0) host.appendChild(el("p", { style: "color:var(--muted);font-size:13px;" }, "Keine Top-Momente eingetragen."));
+  else {
+    const list = el("div", { class: "text-list" });
+    topMoments.forEach(r => list.appendChild(el("div", { class: "text-item" },
+      el("div", { class: "meta" }, fmtDate(r.session_date)),
+      r.top_moment)));
+    host.appendChild(list);
+  }
+
+  // Vorsätze
+  host.appendChild(el("h3", {}, "➡️ Vorsätze fürs nächste Training"));
+  const nexts = sorted.filter(r => r.next_training);
+  if (nexts.length === 0) host.appendChild(el("p", { style: "color:var(--muted);font-size:13px;" }, "Keine Vorsätze eingetragen."));
+  else {
+    const list = el("div", { class: "text-list" });
+    nexts.forEach(r => list.appendChild(el("div", { class: "text-item" },
+      el("div", { class: "meta" }, fmtDate(r.session_date)),
+      r.next_training)));
+    host.appendChild(list);
+  }
+
+  // Alle Reflexionen im Detail (Q&A chronologisch)
+  host.appendChild(el("h3", {}, "📋 Alle Reflexionen im Detail"));
+  if (sorted.length === 0) {
+    host.appendChild(el("p", { style: "color:var(--muted);font-size:13px;" }, "Keine Reflexionen vorhanden."));
+  } else {
+    // Neueste zuerst zeigen für Detail-Liste
+    const chrono = sorted.slice().reverse();
+    chrono.forEach((r, idx) => {
+      const detailsEl = document.createElement("details");
+      detailsEl.style.cssText = "background:#F7F9FC;border-radius:8px;margin-bottom:8px;padding:12px 16px;border-left:3px solid var(--primary);";
+      if (idx === 0) detailsEl.open = true; // neueste standardmäßig offen
+      const summary = document.createElement("summary");
+      summary.style.cssText = "cursor:pointer;font-weight:600;color:var(--text);";
+      const scales = r.answers.map(a => a.scale).filter(s => s != null);
+      const avgR = scales.length ? (scales.reduce((a,b)=>a+b,0)/scales.length).toFixed(1) : "–";
+      summary.innerHTML = `${escapeHtml(fmtDate(r.session_date))} · <span style="color:var(--muted);font-weight:500;">${escapeHtml(r.session_type || "—")}</span> · <span style="color:var(--primary);">Ø ${avgR}</span> · <span style="color:var(--muted);font-weight:500;font-size:12px;">${r.answers.length} Antworten</span>`;
+      detailsEl.appendChild(summary);
+
+      // Antworten nach Bereich gruppieren
+      const grouped = {};
+      r.answers.forEach(a => {
+        if (!grouped[a.area_id]) grouped[a.area_id] = [];
+        grouped[a.area_id].push(a);
+      });
+      const body = el("div", { style: "margin-top:10px;" });
+      for (const [area, ans] of Object.entries(grouped)) {
+        const meta = AREA_META[area] || { label: area, color: "#0F3460" };
+        const block = el("div", { style: `margin-top:8px;padding:8px 10px;border-left:2px solid ${meta.color};background:#fff;border-radius:0 6px 6px 0;` });
+        block.appendChild(el("div", { style: `font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:${meta.color};margin-bottom:4px;` }, meta.label));
+        ans.forEach(a => {
+          const row = el("div", { style: "display:flex;gap:10px;align-items:flex-start;padding:4px 0;font-size:13px;" });
+          row.appendChild(el("div", { style: "flex:1;" },
+            el("div", { style: "font-weight:600;font-size:12px;color:var(--muted);" }, escapeHtml(a.topic || "")),
+            el("div", {}, escapeHtml(a.question_text || ""))
+          ));
+          row.appendChild(el("div", { style: `font-size:18px;font-weight:700;color:${meta.color};white-space:nowrap;align-self:center;` }, `${a.scale} / 5`));
+          block.appendChild(row);
+        });
+        body.appendChild(block);
+      }
+      if (r.top_moment) {
+        body.appendChild(el("div", { style: "margin-top:10px;padding:8px 10px;background:#FEF9C3;border-left:2px solid #CA8A04;border-radius:0 6px 6px 0;font-size:13px;" },
+          el("div", { style: "font-size:11px;font-weight:700;color:#713F12;margin-bottom:2px;" }, "⭐ TOP-MOMENT"),
+          escapeHtml(r.top_moment)));
+      }
+      if (r.next_training) {
+        body.appendChild(el("div", { style: "margin-top:6px;padding:8px 10px;background:#DBEAFE;border-left:2px solid #2563EB;border-radius:0 6px 6px 0;font-size:13px;" },
+          el("div", { style: "font-size:11px;font-weight:700;color:#1E3A8A;margin-bottom:2px;" }, "➡️ VORSATZ NÄCHSTES TRAINING"),
+          escapeHtml(r.next_training)));
+      }
+      // Area-Texte falls vorhanden
+      if (r.area_texts) {
+        for (const [area, txt] of Object.entries(r.area_texts || {})) {
+          if (!txt) continue;
+          const meta = AREA_META[area] || { label: area, color: "#0F3460" };
+          body.appendChild(el("div", { style: `margin-top:6px;padding:8px 10px;background:#fff;border-left:2px solid ${meta.color};border-radius:0 6px 6px 0;font-size:13px;` },
+            el("div", { style: `font-size:11px;font-weight:700;color:${meta.color};margin-bottom:2px;` }, `💬 ${meta.label.toUpperCase()}`),
+            escapeHtml(txt)));
+        }
+      }
+      detailsEl.appendChild(body);
+      host.appendChild(detailsEl);
+    });
+  }
+}
+
+/* =====================================================================
+   ADMIN VIEW
+===================================================================== */
+async function renderAdmin(){
+  clear();
+  APP.appendChild(renderHeader());
+  const main = el("div", { class: "container wide" });
+  APP.appendChild(main);
+
+  // Stammdaten parallel laden
+  const [teamsRes, tgsRes] = await Promise.all([
+    db.from("teams").select("*").order("display_order"),
+    db.from("training_groups").select("*").order("display_order")
+  ]);
+  const teams = teamsRes.data || [];
+  const trainingGroups = tgsRes.data || [];
+  if (teams.length === 0) {
+    main.appendChild(el("div", { class: "card" }, el("h2", {}, "Keine Teams. Bitte SQL-Seed erneut ausführen.")));
+    return;
+  }
+
+  main.appendChild(el("div", { class: "card" },
+    el("h1", {}, "⚙️ Spielerverwaltung"),
+    el("p", {}, "Lege Spieler an, sortiere sie nach Mannschaft, Trainingsgruppe und Jahrgang, und teile deren Zugangscodes per Klick.")
+  ));
+
+  // Filter-Card
+  const filterCard = el("div", { class: "card" });
+  filterCard.appendChild(el("h2", {}, "🔍 Spieler filtern"));
+  const fTeam = el("select");
+  fTeam.appendChild(el("option", { value: "" }, "Alle Mannschaften"));
+  teams.forEach(t => fTeam.appendChild(el("option", { value: t.id }, t.name)));
+  const fTg = el("select");
+  fTg.appendChild(el("option", { value: "" }, "Alle Trainingsgruppen"));
+  trainingGroups.forEach(tg => fTg.appendChild(el("option", { value: tg.id }, tg.name)));
+  const fYear = el("select");
+  fYear.appendChild(el("option", { value: "" }, "Alle Jahrgänge"));
+  // Years werden dynamisch beim Listen-Refresh aktualisiert
+  filterCard.appendChild(el("div", { class: "filter-row" },
+    el("div", {}, el("label", {}, "Jugendmannschaft"), fTeam),
+    el("div", {}, el("label", {}, "Trainingsgruppe"), fTg)
+  ));
+  filterCard.appendChild(el("div", {}, el("label", {}, "Jahrgang"), fYear));
+  main.appendChild(filterCard);
+
+  // Spielerliste
+  const listCard = el("div", { class: "card" });
+  listCard.appendChild(el("h2", {}, "👥 Spieler"));
+  const list = el("div");
+  listCard.appendChild(list);
+  main.appendChild(listCard);
+
+  // Neuer Spieler
+  const addCard = el("div", { class: "card" });
+  addCard.appendChild(el("h2", {}, "➕ Neuen Spieler anlegen"));
+  const nName = el("input", { type: "text", placeholder: "Name oder Vorname", autocomplete: "off" });
+  const nTeam = el("select");
+  teams.forEach(t => nTeam.appendChild(el("option", { value: t.id }, t.name)));
+  const nTg = el("select");
+  nTg.appendChild(el("option", { value: "" }, "(keine)"));
+  trainingGroups.forEach(tg => nTg.appendChild(el("option", { value: tg.id }, tg.name)));
+  const currentYear = new Date().getFullYear();
+  const nYear = el("input", { type: "number", min: "1990", max: String(currentYear), placeholder: "z.B. 2010" });
+  addCard.appendChild(el("div", { class: "filter-row" },
+    el("div", {}, el("label", {}, "Name"), nName),
+    el("div", {}, el("label", {}, "Jugendmannschaft"), nTeam)
+  ));
+  addCard.appendChild(el("div", { class: "filter-row" },
+    el("div", {}, el("label", {}, "Trainingsgruppe"), nTg),
+    el("div", {}, el("label", {}, "Jahrgang"), nYear)
+  ));
+  const addBtn = el("button", { class: "btn btn-primary btn-block" }, "+ Hinzufügen");
+  addCard.appendChild(addBtn);
+  main.appendChild(addCard);
+
+  const refresh = async () => {
+    const { data: players } = await db.from("players")
+      .select("*, teams(id, name, group_id), training_groups(id, name)")
+      .eq("active", true)
+      .order("name");
+
+    // Years für Filter berechnen
+    const years = Array.from(new Set((players || []).map(p => p.birth_year).filter(Boolean))).sort();
+    const currentY = fYear.value;
+    fYear.innerHTML = "";
+    fYear.appendChild(el("option", { value: "" }, "Alle Jahrgänge"));
+    years.forEach(y => fYear.appendChild(el("option", { value: String(y) }, String(y))));
+    if (years.includes(parseInt(currentY))) fYear.value = currentY;
+
+    list.innerHTML = "";
+    let filtered = players || [];
+    if (fTeam.value) filtered = filtered.filter(p => p.team_id === fTeam.value);
+    if (fTg.value) filtered = filtered.filter(p => p.training_group_id === fTg.value);
+    if (fYear.value) filtered = filtered.filter(p => String(p.birth_year) === fYear.value);
+
+    if (filtered.length === 0) {
+      list.appendChild(el("div", { class: "empty-state", style: "padding:20px;" },
+        el("p", {}, "Keine Spieler mit diesen Filtern. Lege unten einen neuen an.")));
+      return;
+    }
+    filtered.forEach(p => {
+      const row = el("div", { class: "player-row" });
+      const teamLabel = p.teams?.name || "(kein Team)";
+      const tgLabel = p.training_groups?.name || "—";
+      const yearLabel = p.birth_year || "—";
+      row.appendChild(el("div", { class: "name" },
+        p.name + " ",
+        el("span", { style: "font-weight:400;color:var(--muted);font-size:12px;" },
+          `· ${teamLabel} · ${tgLabel} · Jg. ${yearLabel}`)
+      ));
+      row.appendChild(el("span", { class: "code" }, p.access_code));
+      const playerUrl = location.origin + location.pathname + `#/r/${p.access_code}`;
+      const copy = el("button", { class: "icon-btn", title: "Link kopieren" }, "📋");
+      copy.addEventListener("click", () => {
+        navigator.clipboard.writeText(playerUrl).then(() => toast("Link kopiert"));
+      });
+      const edit = el("button", { class: "icon-btn", title: "Spieler bearbeiten" }, "✏️");
+      edit.addEventListener("click", () => openEditPlayer(p, teams, trainingGroups, refresh));
+      const del = el("button", { class: "icon-btn danger", title: "Spieler endgültig löschen" }, "🗑");
+      del.addEventListener("click", async () => {
+        // Anzahl Reflexionen für Warnung holen
+        const { count: refCount } = await db.from("reflections")
+          .select("*", { count: "exact", head: true })
+          .eq("player_id", p.id);
+        const msg = refCount && refCount > 0
+          ? `${p.name} ENDGÜLTIG löschen?\n\nDamit werden auch ${refCount} Reflexion${refCount === 1 ? "" : "en"} und alle dazugehörigen Antworten unwiderruflich aus der Datenbank entfernt.`
+          : `${p.name} ENDGÜLTIG löschen?\n\nKeine Reflexionen vorhanden — nur der Spieler-Eintrag wird gelöscht.`;
+        if (!confirm(msg)) return;
+        const { error } = await db.from("players").delete().eq("id", p.id);
+        if (error) { toast("Fehler: " + error.message, "error"); return; }
+        toast(`${p.name} gelöscht`);
+        refresh();
+      });
+      row.appendChild(el("div", { class: "actions" }, copy, edit, del));
+      list.appendChild(row);
+    });
+  };
+
+  const addPlayer = async () => {
+    const n = nName.value.trim();
+    if (!n) { toast("Name eintragen", "error"); return; }
+    const team = teams.find(t => t.id === nTeam.value);
+    if (!team) { toast("Mannschaft wählen", "error"); return; }
+    const code = generateAccessCode(n, team.id);
+    const payload = {
+      group_id: team.group_id,
+      team_id: team.id,
+      training_group_id: nTg.value || null,
+      birth_year: nYear.value ? parseInt(nYear.value) : null,
+      name: n, access_code: code, active: true
+    };
+    const { error } = await db.from("players").insert(payload);
+    if (error) { toast("Fehler: " + error.message, "error"); return; }
+    nName.value = ""; nTg.value = ""; nYear.value = "";
+    toast(`${n} hinzugefügt`);
+    refresh();
+  };
+  nName.addEventListener("keydown", e => { if (e.key === "Enter") addPlayer(); });
+  addBtn.addEventListener("click", addPlayer);
+
+  [fTeam, fTg, fYear].forEach(s => s.addEventListener("change", refresh));
+  refresh();
+}
+
+function openEditPlayer(player, teams, trainingGroups, onSave){
+  const overlay = el("div", { style: "position:fixed;inset:0;background:rgba(15,52,96,0.85);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;" });
+  const card = el("div", { style: "background:#fff;border-radius:12px;padding:24px;max-width:480px;width:100%;" });
+  card.appendChild(el("h2", {}, `✏️ ${player.name} bearbeiten`));
+  const eName = el("input", { type: "text", value: player.name });
+  const eTeam = el("select");
+  teams.forEach(t => {
+    const opt = el("option", { value: t.id }, t.name);
+    if (t.id === player.team_id) opt.selected = true;
+    eTeam.appendChild(opt);
+  });
+  const eTg = el("select");
+  eTg.appendChild(el("option", { value: "" }, "(keine)"));
+  trainingGroups.forEach(tg => {
+    const opt = el("option", { value: tg.id }, tg.name);
+    if (tg.id === player.training_group_id) opt.selected = true;
+    eTg.appendChild(opt);
+  });
+  const eYear = el("input", { type: "number", min: "1990", max: String(new Date().getFullYear()), value: player.birth_year || "" });
+  card.appendChild(el("div", {}, el("label", {}, "Name"), eName));
+  card.appendChild(el("div", {}, el("label", {}, "Jugendmannschaft"), eTeam));
+  card.appendChild(el("div", {}, el("label", {}, "Trainingsgruppe"), eTg));
+  card.appendChild(el("div", {}, el("label", {}, "Jahrgang"), eYear));
+  const save = el("button", { class: "btn btn-primary" }, "Speichern");
+  const cancel = el("button", { class: "btn btn-secondary" }, "Abbrechen");
+  card.appendChild(el("div", { class: "btn-row", style: "margin-top:12px;" }, save, cancel));
+  cancel.addEventListener("click", () => overlay.remove());
+  save.addEventListener("click", async () => {
+    const team = teams.find(t => t.id === eTeam.value);
+    const payload = {
+      name: eName.value.trim(),
+      team_id: team.id,
+      group_id: team.group_id,
+      training_group_id: eTg.value || null,
+      birth_year: eYear.value ? parseInt(eYear.value) : null
+    };
+    const { error } = await db.from("players").update(payload).eq("id", player.id);
+    if (error) { toast("Fehler: " + error.message, "error"); return; }
+    toast("Gespeichert");
+    overlay.remove();
+    onSave();
+  });
+  overlay.appendChild(card);
+  document.body.appendChild(overlay);
+}
+
+/* =====================================================================
+   AGGREGATE HELPERS
+===================================================================== */
+function aggregateReflections(detailRows){
+  const map = new Map();
+  for (const r of detailRows) {
+    if (!map.has(r.reflection_id)) {
+      map.set(r.reflection_id, {
+        id: r.reflection_id,
+        session_date: r.session_date,
+        session_type: r.session_type,
+        top_moment: r.top_moment,
+        next_training: r.next_training,
+        area_texts: r.area_texts,
+        player_name: r.player_name,
+        player_id: r.player_id,
+        group_id: r.group_id,
+        group_name: r.group_name,
+        team_id: r.team_id,
+        team_name: r.team_name,
+        training_group_id: r.training_group_id,
+        training_group_name: r.training_group_name,
+        birth_year: r.birth_year,
+        answers: []
+      });
+    }
+    if (r.answer_id) {
+      map.get(r.reflection_id).answers.push({
+        area_id: r.area_id, topic: r.topic, scale: r.scale_value, question_text: r.question_text
+      });
+    }
+  }
+  return Array.from(map.values());
+}
+
+/* =====================================================================
+   ROUTER
+===================================================================== */
+function parseRoute(){
+  const hash = location.hash.replace(/^#/, "").replace(/^\//, "");
+  const parts = hash.split("/");
+  return { path: parts[0] || "home", arg: parts[1] };
+}
+
+async function route(){
+  try {
+    APP.dataset.booted = "1";
+    if (setupNeeded) { renderSetupRequired(); return; }
+    if (supabaseInitError) {
+      APP.innerHTML = `<div style="padding:30px;font-family:system-ui;">
+        <h1 style="color:#B91C1C;">Supabase-Verbindung fehlgeschlagen</h1>
+        <p>${String(supabaseInitError.message || supabaseInitError)}</p>
+        <p style="font-size:13px;color:#5B6471;">Häufige Ursache: Werbeblocker oder strenge Privacy-Erweiterung blockiert das Laden der Supabase-Library vom CDN. In einem anderen Browser oder ohne Erweiterungen testen.</p>
+      </div>`;
+      return;
+    }
+    // refresh auth state
+    if (db) {
+      try {
+        const { data: { user } } = await db.auth.getUser();
+        State.user = user;
+      } catch(e) {
+        console.warn("Auth check failed (ok if not logged in):", e);
+        State.user = null;
+      }
+    }
+
+    const r = parseRoute();
+    switch (r.path) {
+      case "home":
+      case "":
+        renderHome(); break;
+      case "player-entry":
+        renderPlayerEntry(); break;
+      case "r":
+        r.arg ? renderPlayerReflect(r.arg) : renderPlayerEntry(); break;
+      case "me":
+        r.arg ? renderPlayerMe(r.arg) : renderPlayerEntry(); break;
+      case "trainer":
+        if (State.user) renderTrainerDashboard(); else renderTrainerLogin(); break;
+      case "admin":
+        if (State.user) renderAdmin(); else renderTrainerLogin(); break;
+      default:
+        renderHome();
+    }
+  } catch(e) {
+    console.error("Router error:", e);
+    APP.innerHTML = `<div style="padding:30px;font-family:system-ui;">
+      <h1 style="color:#B91C1C;">Fehler beim Laden</h1>
+      <p>${String(e && e.message || e)}</p>
+      <p><small>Schau in die Browser-Konsole (Cmd+Option+J) für Details.</small></p>
+    </div>`;
+  }
+}
+
+window.addEventListener("hashchange", route);
+
+function boot(){
+  if (location.hash.includes("access_token")) {
+    // Supabase JS handles this automatically; route after a tick
+    setTimeout(route, 200);
+  } else {
+    route();
+  }
+}
+
+// DOMContentLoaded may have already fired by the time this script runs
+if (document.readyState === "loading") {
+  window.addEventListener("DOMContentLoaded", boot);
+} else {
+  boot();
+}
+
+if (db) {
+  try {
+    db.auth.onAuthStateChange((evt) => {
+      if (evt === "SIGNED_IN") {
+        const r = parseRoute();
+        // Nur auf /trainer redirecten wenn nicht auf einer Spieler-Route (sonst frisst der Redirect den Spieler-Link auf)
+        const isPlayerRoute = r.path === "r" || r.path === "me" || r.path === "player-entry";
+        const isOnHomeOrLogin = r.path === "home" || r.path === "" || (r.path === "trainer" && !State.user);
+        if (!isPlayerRoute && isOnHomeOrLogin) {
+          location.hash = "#/trainer";
+        }
+      }
+      if (evt === "SIGNED_OUT") { State.user = null; }
+    });
+  } catch(e) {
+    console.warn("onAuthStateChange not available:", e);
+  }
+}
+</script>
+
+</body>
+</html>
